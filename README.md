@@ -482,14 +482,14 @@ if __name__ == '__main__':
 ```
 ## Start Container Images Scan Automation
 ```shellSession
-$ ./quick_scan_container_images_v1.sh --repo-ns xxx_5gc --cnf-prefix "busybox|simple"
+$ ./quick_scan_container_images.sh --repo-ns xxxxxxx_5gc --cnf-prefix "busybox|simple"
 
 Checking the pre-requirements steps...........
 ========================================================
 Pre-Requirements Checking                      Status    
 ---------------------------------------------------------
 python3 and preflight installed                  OK                      
-quay.xxx.bos2.lab's Connection               OK                      
+quay.xxxxxxx.bos2.lab's Connection               OK                      
 Registry Server Bearer-Token Access              OK                      
 Python Pandas and Openpyxl installed             OK                      
 Docker Authentication                            OK                      
