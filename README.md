@@ -205,7 +205,7 @@ check_tools() {
         printf "%-48s \e[1;31m%-24s\e[m\n" "python3 and preflight installed" "NOK"
         exit 1
     fi
-    file_exists "ava_csv_to_xlsx_conv_v1.py" || bye "ava_csv_to_xlsx_conv_v1.py: No such file."
+    file_exists "ava_csv_to_xlsx_conv.py" || bye "ava_csv_to_xlsx_conv.py: No such file."
 }
 
 #Check if python pandas and openpyxl packages are installed
@@ -280,7 +280,7 @@ start_convert_csv_xlsx_format_sort() {
         exit 1
     fi
 
-    python3 ava_csv_to_xlsx_conv_v1.py $input_csv $output_xlsx
+    python3 ava_csv_to_xlsx_conv.py $input_csv $output_xlsx
     if [ $? -eq 0 ]; then
         log "Successfully Converted from $input_csv to $output_xlsx!"
     else
