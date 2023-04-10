@@ -406,7 +406,7 @@ start_container_images_scan
 #Start convert csv to xlsx and sort/format only-if panda/openpyxl packages are installed
 start_convert_csv_xlsx_format_sort $preflight_image_scan_result_csv "images_scan_results.xlsx"
 ```
-## Convert CSV to XLSX and Format/Sort Python Script
+## Contents of CSV to XLSX Conversion Python Script
 ```python
 import argparse
 import pandas as pd
