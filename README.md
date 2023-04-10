@@ -535,6 +535,6 @@ Total Number Images Scanned: 2
 - **Images Scan Console Output:** 
 ![Images Scan Console Output](img/images_scan_console_output.png "Images Scan Console Output")
   
-- **Images Scan Console Output:**   
+- **Images Scan XSLX Output:**   
 ![Images Scan XLSX Conversion Output](img/images_scan_xlsx_conversion_ouput.png "Images Scan XLSX Conversion Output")
 
