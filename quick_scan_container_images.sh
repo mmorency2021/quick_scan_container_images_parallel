@@ -1,7 +1,7 @@
 #!/bin/bash
 
-quay_oauth_api_key="wom0OqiFeylS8CAUxDtDIfNSaWXTRKhR5mXlTX09"
-quay_registry_domain="quay.samsung.bos2.lab"
+quay_oauth_api_key="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+quay_registry_domain="quay.xxx.bos2.lab"
 preflight_image_scan_result_csv="preflight_image_scan_result.csv"
 
 print_help() {
@@ -106,8 +106,6 @@ fi
 if [[ "$FQDN" == "" ]]; then
     FQDN=$(echo $quay_registry_domain)
 fi
-
-echo "FQDN: $FQDN"
 
 if [[ "$API_TOKEN" == "" ]]; then
     API_TOKEN=$(echo ${quay_oauth_api_key})
