@@ -189,13 +189,15 @@ check_registry_server_connection() {
     HOST="$1"
     #GOOGLE="${2:-google.com}"
 
-    if command -v nc >/dev/null 2>&1; then
+    if command -v ncats >/dev/null 2>&1; then
         if nc -zv4 "$HOST" 80 >/dev/null 2>&1; then
             printf "%-48s \e[1;32m%-24s\e[m\n" "$HOST's Connection" "OK"
         else
             printf "%-48s \e[1;31m%-24s\e[m\n" "$HOST's Connection" "NOK"
             exit 1
         fi
+    else
+        printf "%-48s \e[1;33m%-24s\e[m\n" "$HOST's Connection" "SKIPPED"
     fi
 }
 
