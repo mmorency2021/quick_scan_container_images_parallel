@@ -6,6 +6,8 @@ The test cases output will print to console, CSV and then convert CSV to XLS wit
 - Login to Private Registry Server with Podman login -u xxx quay.io
 - To talk to Quay.io Or Private Registry via REST API, it requires oauth and bear token
 - Push images to Quay Repository with specific Organization
+- Python3 + Pandas and Openpyxl using pip3 install pandas/openpyxl
+- netcat (nc) rpm installed if not there it will skip the connectivity checking
 
 
 ## Quick Images Scan Shell Script Usage
@@ -233,13 +235,15 @@ check_registry_server_connection() {
     HOST="$1"
     #GOOGLE="${2:-google.com}"
 
-    if command -v nc >/dev/null 2>&1; then
+    if command -v ncats >/dev/null 2>&1; then
         if nc -zv4 "$HOST" 80 >/dev/null 2>&1; then
-	    printf "%-48s \e[1;32m%-24s\e[m\n" "$HOST's Connection" "OK"
+            printf "%-48s \e[1;32m%-24s\e[m\n" "$HOST's Connection" "OK"
         else
-	    printf "%-48s \e[1;31m%-24s\e[m\n" "$HOST's Connection" "NOK"
+            printf "%-48s \e[1;31m%-24s\e[m\n" "$HOST's Connection" "NOK"
             exit 1
         fi
+    else
+        printf "%-48s \e[1;33m%-24s\e[m\n" "$HOST's Connection" "SKIPPED"
     fi
 }
 
