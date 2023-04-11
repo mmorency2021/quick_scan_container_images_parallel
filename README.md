@@ -230,15 +230,16 @@ check_python_packages() {
 }
 
 check_registry_server_connection() {
-    HOST=$1
-    ping -c 1 $HOST >/dev/null 2>&1 # send 1 packet and redirect output to /dev/null
-    if [ $? -eq 0 ]; then # check the exit code of ping
-        #log "Connection to $HOST succeeded"
-        printf "%-48s \e[1;32m%-24s\e[m\n" "$HOST's Connection" "OK"
-    else
-        #log "Connection to $HOST failed, please check your network connectivity or VPN"
-        printf "%-48s \e[1;31m%-24s\e[m\n" "$HOST's Connection" "NOK"
-        exit 1
+    HOST="$1"
+    #GOOGLE="${2:-google.com}"
+
+    if command -v nc >/dev/null 2>&1; then
+        if nc -zv4 "$HOST" 80 >/dev/null 2>&1; then
+	    printf "%-48s \e[1;32m%-24s\e[m\n" "$HOST's Connection" "OK"
+        else
+	    printf "%-48s \e[1;31m%-24s\e[m\n" "$HOST's Connection" "NOK"
+            exit 1
+        fi
     fi
 }
 
