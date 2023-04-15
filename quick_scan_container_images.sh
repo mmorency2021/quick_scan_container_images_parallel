@@ -1,7 +1,7 @@
 #!/bin/bash
 
-quay_oauth_api_key="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-quay_registry_domain="quay.xxx.bos2.lab"
+quay_oauth_api_key="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+quay_registry_domain="quay.xxxxxxxx.bos2.lab"
 preflight_image_scan_result_csv="preflight_image_scan_result.csv"
 
 print_help() {
@@ -107,6 +107,8 @@ if [[ "$FQDN" == "" ]]; then
     FQDN=$(echo $quay_registry_domain)
 fi
 
+echo "FQDN: $FQDN"
+
 if [[ "$API_TOKEN" == "" ]]; then
     API_TOKEN=$(echo ${quay_oauth_api_key})
 fi
@@ -164,6 +166,21 @@ check_tools() {
     file_exists "ava_csv_to_xlsx_conv.py" || bye "ava_csv_to_xlsx_conv.py: No such file."
 }
 
+check_preflight_version() {
+    # Set the minimum Preflight version required
+    MIN_PREFLIGHT_VERSION="1.5.2"
+
+    # Check if Preflight is installed and get the version
+    PREFLIGHT_VERSION=$(preflight --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+')
+
+    # Compare the Preflight version to the minimum version required
+    if [ "$(printf '%s\n' "$MIN_PREFLIGHT_VERSION" "$PREFLIGHT_VERSION" | sort -V | head -n1)" != "$MIN_PREFLIGHT_VERSION" ]; then
+        printf "%-48s \e[1;31m%-24s\e[m\n" "Check Preflight Minimum version 1.5.2+" "NOK"
+        exit 1
+    else
+        printf "%-48s \e[1;32m%-24s\e[m\n" "Check Preflight Minimum version 1.5.2+" "OK"
+    fi
+}
 #Check if python pandas and openpyxl packages are installed
 check_python_packages() {
     if pip3 show pandas &>/dev/null && pip3 show openpyxl &>/dev/null; then
@@ -241,7 +258,7 @@ start_convert_csv_xlsx_format_sort() {
 
     python3 ava_csv_to_xlsx_conv.py $input_csv $output_xlsx
     if [ $? -eq 0 ]; then
-        log "Successfully Converted from $input_csv to $output_xlsx!"
+        log "Successfully Converted from $input_csv to $output_xlsx!" >/dev/null 2>&1
     else
         log "Failed to Convert from $input_csv $output_xlsx!!!"
         exit 1
@@ -254,8 +271,10 @@ start_container_images_scan() {
     export PFLT_LOGLEVEL=trace
     export PFLT_LOGFILE=/tmp/preflight.log
 
-    printf "\n%s\n" "Please be patient while scanning images..."
+    printf "%s\n" "Please be patient while scanning images..."
     count=0
+    total_time=0
+    total_seconds=0
     for ((j = 0; j < ${#ImageLists[*]}; j++)); do
         start_time=$(date +%s.%N)
 
@@ -278,10 +297,8 @@ start_container_images_scan() {
         #since this script using preflight to do quick image scan so certification-project-id is dummy
         result_output=$(preflight check container "$inspect_url" --certification-project-id 63ec090760bb63386e44a33e \
             -d "${XDG_RUNTIME_DIR}/containers/auth.json" 2>&1 |
-            awk -F'[, =]+' '/check=/ { check=$9 } /result=|err=/ {if(/result=/) {result=$11} else {result=$10}} \
-	    /err=/ {err=$10} (check && result) { print check "," (err ? err : result); check=result=err="" }' |
-            sed 's/ //g' | sed 's/err/ERROR/g')
-        
+            awk 'match($0, /check=([^ ]+)/, c) && match($0, /result=([^ ]+)/, r) {print c[1] "," r[1]}')
+
         img_name=$(echo ${ImageLists[$j]} | rev | cut -d '/' -f1 | rev)
         final_output_csv=$(printf "%s\n" $result_output | awk -v img="$img_name" '{print img "," $0}')
         printf "%-20s %-25s %-10s\n" "Image Name" "Test Case" "Status"
@@ -304,7 +321,8 @@ start_container_images_scan() {
         printf "%s\n" "$final_output_csv" >>$preflight_image_scan_result_csv
         printf "%s\n" "======================================================"
 
-        verdict_status=$(cat /tmp/preflight.log | awk -F'[:="]+' '/result:/ {print "Verdict:" $9}')
+        #verdict_status=$(cat /tmp/preflight.log | awk -F'[:="]+' '/result:/ {print "Verdict:" $9}')
+        verdict_status=$(cat /tmp/preflight.log | awk 'match($0, /result: ([^"]+)/, r) {print "Verdict: " r[1]}')
         vstatus=$(echo "$verdict_status" | awk '{print $2}')
         if [[ "$vstatus" =~ "FAILED" ]]; then
             printf "Verdict: \e[1;31m%-10s\e[m\n" "${vstatus}"
@@ -319,9 +337,18 @@ start_container_images_scan() {
         end_time=$(date +%s.%N)
         printf "Time elapsed: %.3f seconds\n" $(echo "$end_time - $start_time" | bc)
 
+        elapsed_time=$(echo "$end_time - $start_time" | bc)
+        total_seconds=$(echo "$total_seconds + $elapsed_time" | bc)
         count=$((count + 1))
     done
+    printf "%s\n" "------------------------------------------------------"
+    # convert total seconds to elapsed time format
+    total_time=$(date -u -d "@$total_seconds" '+%Hh:%Mm:%Ss')
+
     printf "Total Number Images Scanned: %s\n" "$count"
+    printf "Total Time Scanned: %s\n" "$total_time"
+    printf "%s\n" "------------------------------------------------------"
+
 }
 
 ###############################Main Function###################################
@@ -331,6 +358,9 @@ printf "%-46s %-10s\n" "Pre-Requirements Checking" "Status"
 printf "%s\n" "---------------------------------------------------------"
 #check preflight and python3 exist
 check_tools
+
+#check preflight minimum version 1.5.2+
+check_preflight_version
 
 #check registry server is reachable
 check_registry_server_connection $FQDN
