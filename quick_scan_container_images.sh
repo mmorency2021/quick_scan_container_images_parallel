@@ -276,9 +276,12 @@ start_container_images_scan() {
         inspect_url="${FQDN}/${REPO_NS}/${ImageLists[$j]}:$tag"
 
         #since this script using preflight to do quick image scan so certification-project-id is dummy
-        result_output=$(preflight check container "$inspect_url" --certification-project-id 63ec090760bb63386e44a33e -d "${XDG_RUNTIME_DIR}/containers/auth.json" \
-            2>&1 | awk -F'[= "]' '/completed:/ {gsub(/result/,""); print $11 "," $13,$14}' | sed 's/ //g' | sed 's/err/ERROR/g')
-
+        result_output=$(preflight check container "$inspect_url" --certification-project-id 63ec090760bb63386e44a33e \
+            -d "${XDG_RUNTIME_DIR}/containers/auth.json" 2>&1 |
+            awk -F'[, =]+' '/check=/ { check=$9 } /result=|err=/ {if(/result=/) {result=$11} else {result=$10}} \
+	    /err=/ {err=$10} (check && result) { print check "," (err ? err : result); check=result=err="" }' |
+            sed 's/ //g' | sed 's/err/ERROR/g')
+        
         img_name=$(echo ${ImageLists[$j]} | rev | cut -d '/' -f1 | rev)
         final_output_csv=$(printf "%s\n" $result_output | awk -v img="$img_name" '{print img "," $0}')
         printf "%-20s %-25s %-10s\n" "Image Name" "Test Case" "Status"
