@@ -472,7 +472,7 @@ def convert_csv_xlsx_sort_and_format(input_file: str, output_file: str):
 
     # Set column widths
     ws.column_dimensions['A'].width = 20
-    ws.column_dimensions['B'].width = 20
+    ws.column_dimensions['B'].width = 25
     ws.column_dimensions['C'].width = 20
 
     # Write the data to the worksheet
