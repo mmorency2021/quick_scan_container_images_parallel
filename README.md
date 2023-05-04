@@ -158,8 +158,6 @@ if [[ "$FQDN" == "" ]]; then
     FQDN=$(echo $quay_registry_domain)
 fi
 
-echo "FQDN: $FQDN"
-
 if [[ "$API_TOKEN" == "" ]]; then
     API_TOKEN=$(echo ${quay_oauth_api_key})
 fi
