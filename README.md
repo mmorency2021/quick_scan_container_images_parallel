@@ -3,12 +3,17 @@ Using Quay REST API and Preflight as combination to automate a quick image scan 
 The test cases output will print to console, CSV and then convert CSV to XLS with python script.
 
 ## Pre-Requisites
-- Login to Private Registry Server with Podman login -u xxx quay.io
+- Login to Private Registry Server with `podman login -u xxx quay.io`
 - To talk to Quay.io Or Private Registry via REST API, it requires oauth and bear token
 - Push images to Quay Repository with specific Organization
-- Python3 + Pandas and Openpyxl using pip3 install pandas/openpyxl
+- Python3 + Pandas and Openpyxl using `sudo pip3 install pandas openpyxl`
 - netcat (nc) rpm installed if not there it will skip the connectivity checking
-
+- Install preflight 
+```shellSession
+   wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.6.0/preflight-linux-amd64
+   chmod +x preflight-linux-amd64
+   sudo mv preflight-linux-amd64 /usr/local/bin/preflight
+```
 
 ## Quick Images Scan Shell Script Usage
 ```shellSession
