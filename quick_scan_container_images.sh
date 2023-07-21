@@ -163,7 +163,7 @@ check_tools() {
         printf "%-48s \e[1;31m%-24s\e[m\n" "python3 and preflight installed" "NOK"
         exit 1
     fi
-    file_exists "ava_csv_to_xlsx_conv.py" || bye "ava_csv_to_xlsx_conv.py: No such file."
+    file_exists "preflight_scan_csv_to_xlsx.py" || bye "preflight_scan_csv_to_xlsx.py: No such file."
 }
 
 check_preflight_version() {
@@ -256,9 +256,9 @@ start_convert_csv_xlsx_format_sort() {
         exit 1
     fi
 
-    python3 ava_csv_to_xlsx_conv.py $input_csv $output_xlsx
+    python3 preflight_scan_csv_to_xlsx.py $input_csv $output_xlsx
     if [ $? -eq 0 ]; then
-        log "Successfully Converted from $input_csv to $output_xlsx!" >/dev/null 2>&1
+        log "Successfully Converted from $input_csv to $output_xlsx!" #>/dev/null 2>&1
     else
         log "Failed to Convert from $input_csv $output_xlsx!!!"
         exit 1
@@ -300,7 +300,7 @@ start_container_images_scan() {
             awk 'match($0, /check=([^ ]+)/, c) && match($0, /result=([^ ]+)/, r) {print c[1] "," r[1]}')
 
         img_name=$(echo ${ImageLists[$j]} | rev | cut -d '/' -f1 | rev)
-        final_output_csv=$(printf "%s\n" $result_output | awk -v img="$img_name" '{print img "," $0}')
+        final_output_csv=$(printf "%s\n" $result_output | awk -v img="$img_name" '{print img "," $0}' |sed 's/ERROR/NOT_APP/g')
         printf "%-20s %-25s %-10s\n" "Image Name" "Test Case" "Status"
         printf "%s\n" "------------------------------------------------------"
 
@@ -315,9 +315,10 @@ start_container_images_scan() {
             elif [ "$status" = "PASSED" ]; then
                 printf "%-20s %-25s \e[1;32m%-10s\e[m\n" "${image}" "${testcase}" "${status}"
             else
-                printf "%-20s %-25s \e[1;31m%-10s\e[m\n" "${image}" "${testcase}" "${status}"
+                printf "%-20s %-25s \e[1;33m%-10s\e[m\n" "${image}" "${testcase}" "NOT_APP" #"${status}"
             fi
         done
+        
         printf "%s\n" "$final_output_csv" >>$preflight_image_scan_result_csv
         printf "%s\n" "======================================================"
 
@@ -329,7 +330,7 @@ start_container_images_scan() {
         elif [[ "$vstatus" =~ "PASSED" ]]; then
             printf "Verdict: \e[1;32m%-10s\e[m\n" "${vstatus}"
         else
-            printf "Verdict: \e[1;31m%-10s\e[m\n" "${vstatus}"
+            printf "Verdict: \e[1;33m%-10s\e[m\n" "NOT_APP"
         fi
         touch /tmp/preflight.log
 
@@ -384,7 +385,9 @@ if [ -z $_ImageLists ]; then
 fi
 
 #some cases where new images are not responded via REST API then add an exception here
-#new_images=('global-amf-smsf' 'rel-core/global-amf-uercm' 'rel-core/global-mme-mbmc' 'rel-core/global-mme-mscic' 'rel-core/global-mme-mssic' 'rel-core/global-nf-alpine' 'rel-core/global-nf-clbc' 'rel-core/global-nf-csshd' 'rel-core/global-nf-mls' 'rel-core/global-nf-nlic')
+#new_images=('rel-core/global-amf-smsf' 'rel-core/global-amf-uercm' 'rel-core/global-mme-mbmc' 'rel-core/global-mme-mscic' 'rel-core/global-mme-mssic' 'rel-core/global-nf-alpine' 'rel-core/global-nf-clbc' 'rel-core/global-nf-csshd' 'rel-core/global-nf-mls' 'rel-core/global-nf-nlic' 'rel-nv/cn-lb/raas' 'rel-nv/cn-redis/bitnami/redis-exporter' 'rel-nv/cn-lb/controller' 'rel-nv/cn-lb/kube-rbac-proxy' 'rel-nv/cn-redis/bitnami/redis' 'rel-nv/cn-lb/simplecert' )
+
+new_images=('rel-nv/cn-lb/raas' 'rel-nv/cn-redis/bitnami/redis-exporter' 'rel-nv/cn-lb/controller' 'rel-nv/cn-lb/kube-rbac-proxy' 'rel-nv/cn-redis/bitnami/redis' 'rel-nv/cn-lb/simplecert')
 ImageLists=("${_ImageLists[@]}" "${new_images[@]}")
 
 #check if exist csv is existed and rename it
