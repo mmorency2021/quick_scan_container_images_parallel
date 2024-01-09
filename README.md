@@ -19,6 +19,16 @@ wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/
 chmod +x preflight-linux-amd64
 sudo mv preflight-linux-amd64 /usr/local/bin/preflight
 ```
+- Without Quay RESTAPI Token 
+if QUAY or private registry server not possible to use RESTAPI then comment out this parameter quay_oauth_api_key from shellscript  
+```shellSession
+#quay_oauth_api_key="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+```
+- Update auth.json path if XDG_RUNTIME_DIR Not used   
+if not used XDG_RUNTIME_DIR then specify auth.json
+```shellSession
+auth_json_path="/home/myuser/auth.json"
+```
 
 ## Quick Images Scan Shell Script Usage
 ```shellSession
