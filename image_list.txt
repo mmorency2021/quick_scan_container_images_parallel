@@ -1,0 +1,3 @@
+quay.ava.bos2.lab/ava_5gc/ava-core/univ-smf-nec:v1
+quay.ava.bos2.lab/ava_5gc/ava-core/univ-smf-nad:v1
+quay.ava.bos2.lab/ava_5gc/ava-core/univ-nrf-att:v1
