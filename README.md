@@ -4,6 +4,7 @@ Since preflight newer releases can scan and detect many layers of docker images 
 The test cases output will print to console, CSV and then convert CSV to XLS with python script.
 
 ## Pre-Requisites
+- Clone this github repo then use the scripts  
 - Login to Private Registry Server with `podman login -u xxx quay.io`
 - To talk to Quay.io Or Private Registry via REST API, it requires oauth and bear token
 - Push images to Quay Repository with specific Organization
