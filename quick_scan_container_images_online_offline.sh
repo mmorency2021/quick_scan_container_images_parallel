@@ -250,12 +250,9 @@ check_docker_auth_json_connection() {
 
 check_private_registry_server_auth() {
     HOST=$1
-    if [[ -z "$quay_oauth_api_key" ]]; then
-         HOST="$quay_registry_domain"
-    fi
+
     status_url="https://${HOST}/api/v1/repository?namespace=${REPO_NS}"
     status_code=$(curl -I --silent -o /dev/null -w "%{http_code}" -X GET -H "Authorization: Bearer ${API_TOKEN}" "${status_url}")
-
     if [ $status_code = "200" ]; then # succeed checking authenatication using Bear API_TOKEN
         #log "Check Private Registry Server to $HOST succeeded"
         printf "%-48s \e[1;32m%-24s\e[m\n" "Registry Server Bearer-Token Access" "OK"
@@ -444,7 +441,9 @@ check_preflight_version
 check_registry_server_connection $FQDN
 
 #Check Private Registry Server authentication
-check_private_registry_server_auth $FQDN
+if [[ -n "$quay_oauth_api_key" ]]; then
+     check_private_registry_server_auth $FQDN
+fi
 
 #Check python pandas and openpyxl packages are installed
 check_python_packages
@@ -473,18 +472,24 @@ if [[ -z "$quay_oauth_api_key" ]]; then
     done < image_list.txt
 else
     #Get all images based user's criteria and filters from QAUY via REST API#
-    readarray -t _ImageLists <<<$(curl --silent -X GET -H "Authorization: Bearer ${API_TOKEN}" "https://${FQDN}/api/v1/repository?namespace=${REPO_NS}" | jq -r '.repositories[].name' | egrep ${CNF_PREFIX} | egrep -v ${FILTER})
+    if [[ -z "$CNF_PREFIX" ]]; then
+        ImageLists=("${new_images[@]}")
+    else
+        #some cases where new images are not responded via REST API then add an exception here
+	    #new_images=('ava-core/global-upf-ava' 'ava-core/global-upf-avu')
+        readarray -t _ImageLists <<<$(curl --silent -X GET -H "Authorization: Bearer ${API_TOKEN}" "https://${FQDN}/api/v1/repository?namespace=${REPO_NS}" | jq -r '.repositories[].name' | egrep ${CNF_PREFIX} | egrep -v ${FILTER})
+	    ImageLists=("${_ImageLists[@]}")
+        # Combined Online-list with WA-List then comment out below line
+        #ImageLists=("${_ImageLists[@]}" "${new_images[@]}")
+    fi
 fi
 
-if [ -z $_ImageLists ]; then
+if [ -z $ImageLists ]; then
     log "There is no image in the array list"
     log "Please check with curl cmd manually to see if this image responded to REST API or not!!!"
     exit 1
 fi
 
-#some cases where new images are not responded via REST API then add an exception here
-#new_images=('ava-core/global-upf-ava' 'ava-core/global-upf-avu')
-ImageLists=("${_ImageLists[@]}") # "${new_images[@]}")
 
 #check if exist csv is existed and rename it
 rename_file $preflight_image_scan_result_csv "${preflight_image_scan_result_csv}_saved"
