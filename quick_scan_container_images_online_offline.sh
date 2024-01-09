@@ -97,7 +97,7 @@ if [[ -z "$quay_oauth_api_key" ]]; then
       # Skip all the checks below
 else
     #Note: tag-type and log-type can be excluded from argument#
-    if [[ "$REPO_NS" == "" || "$CNF_PREFIX" == "" ]]; then
+    if [[ "$REPO_NS" == "" ]]; then
         print_help
     fi
 
@@ -472,15 +472,17 @@ if [[ -z "$quay_oauth_api_key" ]]; then
     done < image_list.txt
 else
     #Get all images based user's criteria and filters from QAUY via REST API#
+    #some cases where new images are not responded via REST API then add an exception here
+    #new_images=('ava-core/global-upf-ava' 'ava-core/global-upf-avu')
+    new_images=('rel-core/global-nf-clbm' 'rel-core/global-nf-nsm')
     if [[ -z "$CNF_PREFIX" ]]; then
         ImageLists=("${new_images[@]}")
     else
         #some cases where new images are not responded via REST API then add an exception here
-	    #new_images=('ava-core/global-upf-ava' 'ava-core/global-upf-avu')
         readarray -t _ImageLists <<<$(curl --silent -X GET -H "Authorization: Bearer ${API_TOKEN}" "https://${FQDN}/api/v1/repository?namespace=${REPO_NS}" | jq -r '.repositories[].name' | egrep ${CNF_PREFIX} | egrep -v ${FILTER})
-	    ImageLists=("${_ImageLists[@]}")
+	    #ImageLists=("${_ImageLists[@]}")
         # Combined Online-list with WA-List then comment out below line
-        #ImageLists=("${_ImageLists[@]}" "${new_images[@]}")
+        ImageLists=("${_ImageLists[@]}" "${new_images[@]}")
     fi
 fi
 
