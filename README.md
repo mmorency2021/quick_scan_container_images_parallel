@@ -1,5 +1,6 @@
-# automatic_quick_scan_images_with_preflight
-Using Quay REST API and Preflight as combination to automate a quick image scan for CVE without submission to Backend Catalog. 
+# Breadcrumbsquick_scan_container_images_online_offline
+This script can automate preflight scan the container images with or without using Quay RESTAPI. The purpose of this Preflight scan is checking to see if container images are meet the security best practice test cases of CVE without submission to Backend Catalog. 
+Since preflight newer releases can scan and detect many layers of docker images e.g partner may have change or remove original UBI based image files. This testing is a sanity checking before `Submit to backend` and then able to publish the catalog once all criteria are met. 
 The test cases output will print to console, CSV and then convert CSV to XLS with python script.
 
 ## Pre-Requisites
@@ -11,21 +12,21 @@ The test cases output will print to console, CSV and then convert CSV to XLS wit
 - netcat (nc) rpm installed if not there it will skip the connectivity checking
 - Install preflight 
 ```shellSession
-   wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.6.0/preflight-linux-amd64
-   chmod +x preflight-linux-amd64
-   sudo mv preflight-linux-amd64 /usr/local/bin/preflight
+wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.8.0/preflight-linux-amd64
+chmod +x preflight-linux-amd64
+sudo mv preflight-linux-amd64 /usr/local/bin/preflight
 ```
 
 ## Quick Images Scan Shell Script Usage
 ```shellSession
-bash quick_scan_container_images.sh 
+$ bash quick_scan_container_images_online_offline.sh 
 ------------------------------------------------------------------------------------------------------------------------
-Usage: quick_scan_container_images.sh -rn|--repo-ns <org_name|user_name> -cp|--cnf-prefix <common_image_name> -t|--tag-type <name|digest> -tk|--api-token <xxxxxx> -fq|--fqdn <quay.io> -ft|--filter <filter_me>
-Usage: quick_scan_container_images.sh [-h | --help]
-Usage Ex1: quick_scan_container_images.sh -rn ava -cp "global-|specific" -tk xxxxxx -fq quay.io -t name -ft "existed_image|tested_image"
-Usage Ex2: quick_scan_container_images.sh --repo-ns avareg_5gc --cnf-prefix global- --tag-type name --fqdn quay.io
-Usage Ex3: quick_scan_container_images.sh --repo-ns avareg_5gc --cnf-prefix global- --api-token xxxxx --fqdn quay.io
-Usage Ex4: quick_scan_container_images.sh --repo-ns avareg_5gc --cnf-prefix global-
+Usage: quick_scan_container_images_online_offline.sh -rn|--repo-ns <org_name|user_name> -cp|--cnf-prefix <common_image_name> -t|--tag-type <name|digest> -tk|--api-token <xxxxxx> -fq|--fqdn <quay.io> -ft|--filter <filter_me>
+Usage: quick_scan_container_images_online_offline.sh [-h | --help]
+Usage Ex1: quick_scan_container_images_online_offline.sh -rn ava -cp "global-|specific" -tk xxxxxx -fq quay.io -t name -ft "existed_image|tested_image"
+Usage Ex2: quick_scan_container_images_online_offline.sh --repo-ns avareg_5gc --cnf-prefix global- --tag-type name --fqdn quay.io
+Usage Ex3: quick_scan_container_images_online_offline.sh --repo-ns avareg_5gc --cnf-prefix global- --api-token xxxxx --fqdn quay.io
+Usage Ex4: quick_scan_container_images_online_offline.sh --repo-ns avareg_5gc --cnf-prefix global-
 
 Note: tag-type and log-type can be excluded from argument
 Note1: if quay_oauth_api_key and quay_registry_domain are defined on line #3&4 then use Ex4 to as usage
@@ -44,7 +45,7 @@ Note1: if quay_oauth_api_key and quay_registry_domain are defined on line #3&4 t
  
     -ft|--filter         :  If you want to exclude images or unwanted e.g. chartrepo or tested-images, then
                             pass to script argument like this:
-                            quick_scan_container_images.sh -rn ava -cp global- -t name -ft "existed_image|tested_image"
+                            quick_scan_container_images_online_offline.sh -rn ava -cp global- -t name -ft "existed_image|tested_image"
     
 ------------------------------------------------------------------------------------------------------------------------
 ```
@@ -52,8 +53,12 @@ Note1: if quay_oauth_api_key and quay_registry_domain are defined on line #3&4 t
 ```bash
 #!/bin/bash
 
-quay_oauth_api_key="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
-quay_registry_domain="quay.xxxxxxxx.bos2.lab"
+#if not used XDG_RUNTIME_DIR then specify auth.json
+auth_json_path="${XDG_RUNTIME_DIR}/containers/auth.json"
+
+#If QUAY or private registry server not possible to use RESTAPI then comment out this parameter quay_oauth_api_key
+quay_oauth_api_key="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+quay_registry_domain="quay.ava.bos2.lab"
 preflight_image_scan_result_csv="preflight_image_scan_result.csv"
 
 print_help() {
@@ -140,27 +145,33 @@ for i in "$@"; do
         ;;
     esac
 done
+if [[ -z "$quay_oauth_api_key" ]]; then
+      echo "quay_oauth_api_key is not defined then you are using image_list.txt file!!"
+      # Skip all the checks below
+else
+    #Note: tag-type and log-type can be excluded from argument#
+    if [[ "$REPO_NS" == "" || "$CNF_PREFIX" == "" ]]; then
+        print_help
+    fi
 
-#Note: tag-type and log-type can be excluded from argument#
-if [[ "$REPO_NS" == "" || "$CNF_PREFIX" == "" ]]; then
-    print_help
-fi
+    if [[ "$TAG_TYPE" == "" ]]; then
+        TAG_TYPE="name"
+    fi
 
-if [[ "$TAG_TYPE" == "" ]]; then
-    TAG_TYPE="name"
-fi
+    #if filter arg is empty, then we will filter chartrepo
+    if [[ "$FILTER" == "" ]]; then
+        FILTER="chartrepo"
+    fi
 
-#if filter arg is empty, then we will filter chartrepo
-if [[ "$FILTER" == "" ]]; then
-    FILTER="chartrepo"
-fi
+    if [[ "$FQDN" == "" ]]; then
+        FQDN=$(echo $quay_registry_domain)
+    fi
 
-if [[ "$FQDN" == "" ]]; then
-    FQDN=$(echo $quay_registry_domain)
-fi
+    echo "FQDN: $FQDN"
 
-if [[ "$API_TOKEN" == "" ]]; then
-    API_TOKEN=$(echo ${quay_oauth_api_key})
+    if [[ "$API_TOKEN" == "" ]]; then
+        API_TOKEN=$(echo ${quay_oauth_api_key})
+    fi
 fi
 
 #check if requirement files are existed
@@ -213,22 +224,22 @@ check_tools() {
         printf "%-48s \e[1;31m%-24s\e[m\n" "python3 and preflight installed" "NOK"
         exit 1
     fi
-    file_exists "ava_csv_to_xlsx_conv.py" || bye "ava_csv_to_xlsx_conv.py: No such file."
+    file_exists "preflight_scan_csv_to_xlsx_v3.py" || bye "preflight_scan_csv_to_xlsx_v3.py: No such file."
 }
 
 check_preflight_version() {
     # Set the minimum Preflight version required
-    MIN_PREFLIGHT_VERSION="1.5.2"
+    MIN_PREFLIGHT_VERSION="1.6.11"
 
     # Check if Preflight is installed and get the version
     PREFLIGHT_VERSION=$(preflight --version | grep -o -E '[0-9]+\.[0-9]+\.[0-9]+')
 
     # Compare the Preflight version to the minimum version required
     if [ "$(printf '%s\n' "$MIN_PREFLIGHT_VERSION" "$PREFLIGHT_VERSION" | sort -V | head -n1)" != "$MIN_PREFLIGHT_VERSION" ]; then
-        printf "%-48s \e[1;31m%-24s\e[m\n" "Check Preflight Minimum version 1.5.2+" "NOK"
+        printf "%-48s \e[1;31m%-24s\e[m\n" "Check Preflight Minimum version 1.6.11+" "NOK"
         exit 1
     else
-        printf "%-48s \e[1;32m%-24s\e[m\n" "Check Preflight Minimum version 1.5.2+" "OK"
+        printf "%-48s \e[1;32m%-24s\e[m\n" "Check Preflight Minimum version 1.6.11+" "OK"
     fi
 }
 #Check if python pandas and openpyxl packages are installed
@@ -255,6 +266,10 @@ check_python_packages() {
 check_registry_server_connection() {
     HOST="$1"
     #GOOGLE="${2:-google.com}"
+    
+    if [[ -z "$quay_oauth_api_key" ]]; then
+         HOST="$quay_registry_domain"
+    fi
 
     if command -v nc >/dev/null 2>&1; then
         if nc -zv4 "$HOST" 80 >/dev/null 2>&1; then
@@ -270,8 +285,12 @@ check_registry_server_connection() {
 
 check_docker_auth_json_connection() {
     HOST=$1
+    
+    if [[ -z "$quay_oauth_api_key" ]]; then
+         HOST="$quay_registry_domain"
+    fi
 
-    cat "${XDG_RUNTIME_DIR}/containers/auth.json" | grep $HOST >/dev/null 2>&1
+    cat "$auth_json_path" | grep $HOST >/dev/null 2>&1
     if [ $? -eq 0 ]; then
         #log "Check Docker Authentication to $HOST succeeded!"
         printf "%-48s \e[1;32m%-24s\e[m\n" "Docker Authentication" "OK"
@@ -284,6 +303,9 @@ check_docker_auth_json_connection() {
 
 check_private_registry_server_auth() {
     HOST=$1
+    if [[ -z "$quay_oauth_api_key" ]]; then
+         HOST="$quay_registry_domain"
+    fi
     status_url="https://${HOST}/api/v1/repository?namespace=${REPO_NS}"
     status_code=$(curl -I --silent -o /dev/null -w "%{http_code}" -X GET -H "Authorization: Bearer ${API_TOKEN}" "${status_url}")
 
@@ -306,9 +328,9 @@ start_convert_csv_xlsx_format_sort() {
         exit 1
     fi
 
-    python3 ava_csv_to_xlsx_conv.py $input_csv $output_xlsx
+    python3 preflight_scan_csv_to_xlsx_v3.py $input_csv $output_xlsx
     if [ $? -eq 0 ]; then
-        log "Successfully Converted from $input_csv to $output_xlsx!" >/dev/null 2>&1
+        log "Successfully Converted from $input_csv to $output_xlsx!" #>/dev/null 2>&1
     else
         log "Failed to Convert from $input_csv $output_xlsx!!!"
         exit 1
@@ -316,62 +338,107 @@ start_convert_csv_xlsx_format_sort() {
 }
 
 start_container_images_scan() {
-    #Preflight ENV settings
+    # Preflight ENV settings
     export PFLT_JUNIT="true"
-    export PFLT_LOGLEVEL=trace
+    export PFLT_LOGLEVEL=debug
     export PFLT_LOGFILE=/tmp/preflight.log
 
     printf "%s\n" "Please be patient while scanning images..."
     count=0
     total_time=0
     total_seconds=0
+
     for ((j = 0; j < ${#ImageLists[*]}; j++)); do
         start_time=$(date +%s.%N)
+        
+            unset hasModFilesMap
+        declare -A hasModFilesMap
+        
+        hasModStatus=""
+        hasModFiles=""
 
-        printf "\n%s\n" "Scaning the following image: ${ImageLists[$j]}"
-        printf "%s\n" "======================================================"
+        find "$(pwd)/artifacts/" -type f -delete
+        if [[ -z "$quay_oauth_api_key" ]]; then
+            image_details="${ImageLists[$j]}"
+            repo_imgname_tag=$(echo $image_details | cut -d'/' -f2-)
+            img_name=$(echo ${image_details} | rev | cut -d '/' -f1 | rev | cut -d':' -f1)
+            inspect_url="$image_details"
+        else
+            image_url="https://${FQDN}/api/v1/repository/${REPO_NS}/${ImageLists[$j]}"
 
-        find $(pwd)/artifacts/ -type f -delete
-        image_url="https://${FQDN}/api/v1/repository/${REPO_NS}/${ImageLists[$j]}"
+            if [[ "${TAG_TYPE}" == "name" ]]; then
+                tag_type_flag=".name + \":\" + .tags[].name"
+            else # digest
+                tag_type_flag=".name + \"@\" + .tags[].manifest_digest"
+            fi
 
-        if [[ "${TAG_TYPE}" == "name" ]]; then
-            tag_type_flag=".name + \":\" + .tags[].name"
-        else # digest
-            tag_type_flag=".name + \"@\" + .tags[].manifest_digest"
+            image_details=$(curl --silent -X GET -H "Authorization: Bearer ${API_TOKEN}" "${image_url}" | jq -r "$tag_type_flag" | head -n1)
+            tag=$(echo $image_details | cut -d ':' -f2)
+            inspect_url="${FQDN}/${REPO_NS}/${ImageLists[$j]}:$tag"
+            img_name=$(echo ${ImageLists[$j]} | rev | cut -d '/' -f1 | rev )
+            repo_imgname_tag="$img_name:$tag"
         fi
-        image_details=$(curl --silent -X GET -H "Authorization: Bearer ${API_TOKEN}" "${image_url}" | jq -r "$tag_type_flag" | head -n1)
 
-        tag=$(echo $image_details | cut -d ':' -f2)
-        inspect_url="${FQDN}/${REPO_NS}/${ImageLists[$j]}:$tag"
+        printf "\n%s\n" "Scanning the following image: ${repo_imgname_tag}"
+        printf "%s\n" "================================================================================"        
 
-        #since this script using preflight to do quick image scan so certification-project-id is dummy
+        # Since this script is using preflight to do a quick image scan, the certification-project-id is dummy
         result_output=$(preflight check container "$inspect_url" --certification-project-id 63ec090760bb63386e44a33e \
-            -d "${XDG_RUNTIME_DIR}/containers/auth.json" 2>&1 |
+            -d "${auth_json_path}" 2>&1 |
             awk 'match($0, /check=([^ ]+)/, c) && match($0, /result=([^ ]+)/, r) {print c[1] "," r[1]}')
 
-        img_name=$(echo ${ImageLists[$j]} | rev | cut -d '/' -f1 | rev)
-        final_output_csv=$(printf "%s\n" $result_output | awk -v img="$img_name" '{print img "," $0}')
+        
         printf "%-20s %-25s %-10s\n" "Image Name" "Test Case" "Status"
         printf "%s\n" "------------------------------------------------------"
 
         console_output=($(printf "%s\n" "$result_output" | awk -v img="$img_name" '{print img "," $0}'))
+
         for line in "${console_output[@]}"; do
             image=$(printf "%s\n" "$line" | awk -F',' '{print $1}')
             testcase=$(printf "%s\n" "$line" | awk -F',' '{print $2}')
             status=$(printf "%s\n" "$line" | awk -F',' '{print $3}')
+
+            if [ "$hasModStatus" = "FAILED" ]; then
+                hasModFiles="${hasModFilesMap[$testcase]}"
+            else
+                hasModFiles=""
+            fi
+            if [[ "$testcase" != "HasModifiedFiles" ]]; then
+                 hasModFiles=""
+            fi
 
             if [ "$status" = "FAILED" ]; then
                 printf "%-20s %-25s \e[1;31m%-10s\e[m\n" "${image}" "${testcase}" "${status}"
             elif [ "$status" = "PASSED" ]; then
                 printf "%-20s %-25s \e[1;32m%-10s\e[m\n" "${image}" "${testcase}" "${status}"
             else
-                printf "%-20s %-25s \e[1;31m%-10s\e[m\n" "${image}" "${testcase}" "${status}"
+                printf "%-20s %-25s \e[1;33m%-10s\e[m\n" "${image}" "${testcase}" "NOT_APP"
+            fi
+
+            # Check for HasModifiedFiles is failed and save file debug lines
+            if [[ "$testcase" = "HasModifiedFiles" && "$status" = "FAILED" ]]; then
+                if [ -n "${hasModFilesMap[$testcase]}" ]; then
+                    hasModFilesMap[$testcase]+="$(cat /tmp/preflight.log | grep -o 'file=[^ ]*' | cut -d= -f2 | tr '\n' ':' | sed 's/:$//')"
+                else
+                    hasModFilesMap[$testcase]="$(cat /tmp/preflight.log | grep -o 'file=[^ ]*' | cut -d= -f2 | tr '\n' ':' | sed 's/:$//')"
+                fi
+                hasModStatus="FAILED"
             fi
         done
-        printf "%s\n" "$final_output_csv" >>$preflight_image_scan_result_csv
-        printf "%s\n" "======================================================"
 
-        #verdict_status=$(cat /tmp/preflight.log | awk -F'[:="]+' '/result:/ {print "Verdict:" $9}')
+        for line in "${console_output[@]}"; do
+            image=$(printf "%s\n" "$line" | awk -F',' '{print $1}')
+            testcase=$(printf "%s\n" "$line" | awk -F',' '{print $2}')
+            status=$(printf "%s\n" "$line" | awk -F',' '{print $3}' | sed 's/ERROR/NOT_APP/g')
+            if [ "$hasModStatus" = "FAILED" ]; then
+                hasModFiles="${hasModFilesMap[$testcase]}"
+            else
+                hasModFiles=""
+            fi
+
+            printf "%s,%s,%s,%s,%s\n" "${image}" "${tag}" "${hasModFiles}" "${testcase}" "${status}"
+        done >> $preflight_image_scan_result_csv
+
         verdict_status=$(cat /tmp/preflight.log | awk 'match($0, /result: ([^"]+)/, r) {print "Verdict: " r[1]}')
         vstatus=$(echo "$verdict_status" | awk '{print $2}')
         if [[ "$vstatus" =~ "FAILED" ]]; then
@@ -379,11 +446,11 @@ start_container_images_scan() {
         elif [[ "$vstatus" =~ "PASSED" ]]; then
             printf "Verdict: \e[1;32m%-10s\e[m\n" "${vstatus}"
         else
-            printf "Verdict: \e[1;31m%-10s\e[m\n" "${vstatus}"
+            printf "Verdict: \e[1;33m%-10s\e[m\n" "NOT_APP"
         fi
+
         touch /tmp/preflight.log
 
-        # Stop timer
         end_time=$(date +%s.%N)
         printf "Time elapsed: %.3f seconds\n" $(echo "$end_time - $start_time" | bc)
 
@@ -391,15 +458,29 @@ start_container_images_scan() {
         total_seconds=$(echo "$total_seconds + $elapsed_time" | bc)
         count=$((count + 1))
     done
+
     printf "%s\n" "------------------------------------------------------"
-    # convert total seconds to elapsed time format
     total_time=$(date -u -d "@$total_seconds" '+%Hh:%Mm:%Ss')
 
     printf "Total Number Images Scanned: %s\n" "$count"
     printf "Total Time Scanned: %s\n" "$total_time"
     printf "%s\n" "------------------------------------------------------"
-
 }
+
+# Define the function to check and add an extra empty line
+check_and_add_empty_line() {
+    local file_to_check="$1"
+
+    # Check if the last line of the file is empty
+    if [ -n "$(tail -c 1 "$file_to_check")" ]; then
+        # If not, add an extra empty line
+        echo >> "$file_to_check"
+        echo "Added an extra empty line to $file_to_check"
+    else
+        echo "The last line of $file_to_check is already empty."
+    fi
+}
+
 
 ###############################Main Function###################################
 printf "\n%s\n" "Checking the pre-requirements steps..........."
@@ -409,7 +490,7 @@ printf "%s\n" "---------------------------------------------------------"
 #check preflight and python3 exist
 check_tools
 
-#check preflight minimum version 1.5.2+
+#check preflight minimum version 1.6.11+
 check_preflight_version
 
 #check registry server is reachable
@@ -423,10 +504,31 @@ check_python_packages
 
 #check docker authentication to private registry server has been login
 check_docker_auth_json_connection $FQDN
+
 printf "%s\n" "======================================================="
 
-#Get all images based user's criteria and filters from QAUY via REST API#
-readarray -t _ImageLists <<<$(curl --silent -X GET -H "Authorization: Bearer ${API_TOKEN}" "https://${FQDN}/api/v1/repository?namespace=${REPO_NS}" | jq -r '.repositories[].name' | egrep ${CNF_PREFIX} | egrep -v ${FILTER})
+if [[ -z "$quay_oauth_api_key" ]]; then
+    # Define the array
+    ImageLists=()
+
+    # Define the file to check
+    file_to_check="image_list.txt"
+
+    # Call the function to check and add an extra empty line
+    check_and_add_empty_line "$file_to_check"
+
+    # Read each line from image_list.txt and add it to the array
+    while IFS= read -r line; do
+    if [ -n "$line" ]; then
+        ImageLists+=("$line")
+        echo $line
+    fi
+    done < image_list.txt
+else
+    #Get all images based user's criteria and filters from QAUY via REST API#
+    readarray -t _ImageLists <<<$(curl --silent -X GET -H "Authorization: Bearer ${API_TOKEN}" "https://${FQDN}/api/v1/repository?namespace=${REPO_NS}" | jq -r '.repositories[].name' | egrep ${CNF_PREFIX} | egrep -v ${FILTER})
+fi
+
 if [ -z $_ImageLists ]; then
     log "There is no image in the array list"
     log "Please check with curl cmd manually to see if this image responded to REST API or not!!!"
@@ -434,14 +536,14 @@ if [ -z $_ImageLists ]; then
 fi
 
 #some cases where new images are not responded via REST API then add an exception here
-#new_images=('global-amf-smsf' 'rel-core/global-amf-uercm' 'rel-core/global-mme-mbmc' 'rel-core/global-mme-mscic' 'rel-core/global-mme-mssic' 'rel-core/global-nf-alpine' 'rel-core/global-nf-clbc' 'rel-core/global-nf-csshd' 'rel-core/global-nf-mls' 'rel-core/global-nf-nlic')
-ImageLists=("${_ImageLists[@]}" "${new_images[@]}")
+#new_images=('ava-core/global-upf-ava' 'ava-core/global-upf-avu')
+ImageLists=("${_ImageLists[@]}") # "${new_images[@]}")
 
 #check if exist csv is existed and rename it
 rename_file $preflight_image_scan_result_csv "${preflight_image_scan_result_csv}_saved"
 
 #Print header for CSV
-printf "%s\n" "Image Name,Test Case,Status" | tee $preflight_image_scan_result_csv >/dev/null
+printf "%s\n" "Image Name,Image Tag,Has Modified Files,Test Case,Status" | tee $preflight_image_scan_result_csv >/dev/null
 #Start to using Quay REST API and Preflight to do quick snapshot testing
 start_container_images_scan
 
@@ -462,7 +564,7 @@ def convert_csv_xlsx_sort_and_format(input_file: str, output_file: str):
     df = pd.read_csv(input_file)
 
     # Sort the DataFrame by status and test case name
-    df = df.sort_values(by=['Status', 'Test Case'], key=lambda x: x.map({'FAILED': 0, 'ERROR': 1, 'PASSED': 2}))
+    df = df.sort_values(by=['Status', 'Test Case'], key=lambda x: x.map({'FAILED': 0, 'NOT_APP': 1, 'PASSED': 2}))
 
     # Create an Excel workbook using openpyxl
     wb = Workbook()
@@ -476,26 +578,32 @@ def convert_csv_xlsx_sort_and_format(input_file: str, output_file: str):
 
     # Set column widths
     ws.column_dimensions['A'].width = 20
-    ws.column_dimensions['B'].width = 25
-    ws.column_dimensions['C'].width = 20
+    ws.column_dimensions['B'].width = 30
+    ws.column_dimensions['C'].width = 40
+    ws.column_dimensions['D'].width = 30
+    ws.column_dimensions['E'].width = 20
 
     # Write the data to the worksheet
     for r in dataframe_to_rows(df, index=False, header=True):
         ws.append(r)
 
+    # Set text wrap for column C
+    for cell in ws['C']:
+        cell.alignment = Alignment(wrap_text=True)  # Enable text wrap for column C
+
     # Set the cell background color for the data rows
-    for row in ws.iter_rows(min_row=2):
+    for row in ws.iter_rows(min_row=2, min_col=5, max_col=5):  # Assuming 'Status' column is in column D
         for cell in row:
             if cell.value == 'PASSED':
-                cell.fill = PatternFill(start_color='00FF00', end_color='00FF00', fill_type='solid')
+                cell.font = Font(color='006400')  # Dark green font for 'PASSED'
             elif cell.value == 'FAILED':
-                cell.fill = PatternFill(start_color='FF0000', end_color='FF0000', fill_type='solid')
-            elif cell.value == 'ERROR':
-                cell.fill = PatternFill(start_color='FF9999', end_color='FF9999', fill_type='solid')
+                cell.font = Font(color='FF0000')  # Red font for 'FAILED'
+            elif cell.value == 'NOT_APP':
+                cell.font = Font(color='FFA500')  # Dark orange font for 'NOT_APP' (FFA500 is the hexadecimal color for dark orange)
 
     # Set column alignment
     for col in ws.columns:
-        if col[0].value == 'Status':
+        if col[0].value == 'Status' or col[0].value == 'Image Tag':
             for cell in col:
                 cell.alignment = Alignment(horizontal='center', vertical='center')
         else:
@@ -522,9 +630,9 @@ if __name__ == '__main__':
     args = parser.parse_args()
     convert_csv_xlsx_sort_and_format(args.input_file, args.output_file)
 ```
-## Start Container Images Scan Automation
+## Start Container Images Preflight Scan Automation With Quay RESTAPI
 ```shellSession
-$ ./quick_scan_container_images.sh --repo-ns xxxxxxx_5gc --cnf-prefix "busybox|simple"
+$ bash quick_scan_container_images_online_offline.sh --repo-ns xxxxxxx_5gc --cnf-prefix "busybox|simple"
 
 Checking the pre-requirements steps...........
 ========================================================
@@ -580,3 +688,12 @@ Total Number Images Scanned: 2
 - **Images Scan XSLX Output:**   
 ![Images Scan XLSX Conversion Output](img/images_scan_xlsx_conversion_ouput.png "Images Scan XLSX Conversion Output")
 
+## Start Container Images Preflight Scan Automation Without Quay RESTAPI
+When Partner do not have the priviledge to access Quay or private registry RESTAPI, they can dump the following format to a image_list.txt then the script it will read from this file and using preflight to scan images automatic.
+Of course, there are some mandatory parameters that need to be defined before such as auth.json and registry-fqdn.  
+**image_list.txt:**
+```shellSession
+quay.ava.bos2.lab/ava_5gc/ava-core/univ-smf-nec:v1
+quay.ava.bos2.lab/ava_5gc/ava-core/univ-smf-nad:v1
+quay.ava.bos2.lab/ava_5gc/ava-core/univ-nrf-att:v1
+```
