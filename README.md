@@ -1,7 +1,9 @@
 # quick_scan_container_images_online_offline
-This script can automate preflight scan the container images with or without using Quay RESTAPI. The purpose of this Preflight scan is checking to see if container images are meet the security best practice test cases of CVE without submission to Backend Catalog. 
-Since preflight newer releases can scan and detect many layers of docker images e.g partner may have change or remove original UBI based image files. This testing is a sanity checking before `Submit to backend` and then able to publish the catalog once all criteria are met. 
-The test cases output will print to console, CSV and then convert CSV to XLS with python script.
+This script is designed to streamline the Preflight scanning process for container images, whether Quay RESTAPI is utilized or not. Preflight scanning serves the purpose of assessing whether container images adhere to security best practices, specifically regarding CVE tests, without the need for submission to the Backend Catalog.
+
+With the latest Preflight releases, the scanning capability has been enhanced to detect changes or removals of original UBI-based image files within multiple layers of Docker images. This scanning process serves as a preliminary check before submission to the backend, ensuring that all criteria are met.
+
+The script produces test case results, which are initially displayed in the console and then exported to both CSV and XLS formats using a Python script.
 
 ## Pre-Requisites
 - Clone this github repo then use the scripts  
