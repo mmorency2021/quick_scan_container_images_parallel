@@ -473,8 +473,7 @@ if [[ -z "$quay_oauth_api_key" ]]; then
 else
     #Get all images based user's criteria and filters from QAUY via REST API#
     #some cases where new images are not responded via REST API then add an exception here
-    #new_images=('ava-core/global-upf-ava' 'ava-core/global-upf-avu')
-    new_images=('rel-core/global-nf-clbm' 'rel-core/global-nf-nsm')
+    new_images=('rel-core/global-nf-ava' 'rel-core/global-nf-alex')
     if [[ -z "$CNF_PREFIX" ]]; then
         ImageLists=("${new_images[@]}")
     else
