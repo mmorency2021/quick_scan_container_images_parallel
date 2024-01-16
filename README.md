@@ -132,3 +132,8 @@ quay.ava.bos2.lab/ava_5gc/ava-core/univ-smf-nec:v1
 quay.ava.bos2.lab/ava_5gc/ava-core/univ-smf-nad:v1
 quay.ava.bos2.lab/ava_5gc/ava-core/univ-nrf-att:v1
 ```
+- How to run this script with image_list.txt  
+Run it without any argument like this  
+```shellSession
+$ bash quick_scan_container_images_online_offline.sh
+```
