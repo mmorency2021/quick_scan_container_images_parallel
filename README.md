@@ -79,34 +79,34 @@ Docker Authentication                            OK
 
 Please be patient while scanning images...
 
-Scaning the following image: rel-core/global-nf-busybox
+Scaning the following image: rel-core/univ-box
 ======================================================
 Image Name           Test Case                 Status    
 ------------------------------------------------------
-global-nf-busybox    HasLicense                FAILED    
-global-nf-busybox    HasUniqueTag              PASSED    
-global-nf-busybox    LayerCountAcceptable      PASSED    
-global-nf-busybox    HasNoProhibitedPackages   ERROR     
-global-nf-busybox    HasRequiredLabel          FAILED    
-global-nf-busybox    RunAsNonRoot              FAILED    
-global-nf-busybox    HasModifiedFiles          ERROR     
-global-nf-busybox    BasedOnUbi                FAILED    
+univ-box    HasLicense                FAILED    
+univ-box    HasUniqueTag              PASSED    
+univ-box    LayerCountAcceptable      PASSED    
+univ-box    HasNoProhibitedPackages   ERROR     
+univ-box    HasRequiredLabel          FAILED    
+univ-box    RunAsNonRoot              FAILED    
+univ-box    HasModifiedFiles          ERROR     
+univ-box    BasedOnUbi                FAILED    
 ======================================================
 Verdict: FAILED    
 Time elapsed: 2.533 seconds
 
-Scaning the following image: rel-nv/cn-mongo/mdbm/simplecert
+Scaning the following image: rel-nv/cn-mongo/mdbm/notsimple
 ======================================================
 Image Name           Test Case                 Status    
 ------------------------------------------------------
-simplecert           HasLicense                FAILED    
-simplecert           HasUniqueTag              PASSED    
-simplecert           LayerCountAcceptable      PASSED    
-simplecert           HasNoProhibitedPackages   ERROR     
-simplecert           HasRequiredLabel          FAILED    
-simplecert           RunAsNonRoot              PASSED    
-simplecert           HasModifiedFiles          ERROR     
-simplecert           BasedOnUbi                FAILED    
+notsimple           HasLicense                FAILED    
+notsimple           HasUniqueTag              PASSED    
+notsimple           LayerCountAcceptable      PASSED    
+notsimple           HasNoProhibitedPackages   ERROR     
+notsimple           HasRequiredLabel          FAILED    
+notsimple           RunAsNonRoot              PASSED    
+notsimple           HasModifiedFiles          ERROR     
+notsimple           BasedOnUbi                FAILED    
 ======================================================
 Verdict: FAILED    
 Time elapsed: 6.189 seconds
@@ -115,22 +115,22 @@ Total Number Images Scanned: 2
 ```
 
 - **Images Scan Console Output:** 
-![Images Scan Console Output](img/images_scan_console_output.png "Images Scan Console Output")
+<!-- ![Images Scan Console Output](img/images_scan_console_output.png "Images Scan Console Output") -->
 
 - **New Images Scan with Debug**
-![Images Scan XLSX Conversion Output](img/new-conversion-output.png "Images Scan XLSX Conversion New Output")
+<!-- ![Images Scan XLSX Conversion Output](img/new-conversion-output.png "Images Scan XLSX Conversion New Output") -->
 
 - **Images Scan XSLX Output:**   
-![Images Scan XLSX Conversion Output](img/images_scan_xlsx_conversion_ouput.png "Images Scan XLSX Conversion Output")
+<!-- ![Images Scan XLSX Conversion Output](img/images_scan_xlsx_conversion_ouput.png "Images Scan XLSX Conversion Output") -->
 
 ## Start Container Images Preflight Scan Automation Without Quay RESTAPI
 When Partner do not have the priviledge to access Quay or private registry RESTAPI, they can dump the following format to a image_list.txt then the script it will read from this file and using preflight to scan images automatic.
 Of course, there are some mandatory parameters that need to be defined before such as auth.json and registry-fqdn.  
 **image_list.txt:**
 ```shellSession
-quay.ava.bos2.lab/ava_5gc/ava-core/univ-smf-nec:v1
-quay.ava.bos2.lab/ava_5gc/ava-core/univ-smf-nad:v1
-quay.ava.bos2.lab/ava_5gc/ava-core/univ-nrf-att:v1
+quay.ava.lab/ava_5gc/ava-core/univ-smf-nec:v1
+quay.ava.lab/ava_5gc/ava-core/univ-smf-nad:v1
+quay.ava.lab/ava_5gc/ava-core/univ-nrf-att:v1
 ```
 - How to run this script with image_list.txt  
 Run it without any argument like this  
