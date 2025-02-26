@@ -204,3 +204,9 @@ Total Time Scanned: 00h:00m:29s
 ------------------------------------------------------
 20250225-19:31:59 Container images scan failed; skipping CSV conversion.
 ```
+- convert csv to xlsx manually if some images are failed to scan
+```shellSession
+$ python3 csv_to_xlsx_converter.py 
+usage: csv_to_xlsx_converter.py [-h] input_file output_file
+python3 csv_to_xlsx_converter.py input.csv output.xslx
+```
