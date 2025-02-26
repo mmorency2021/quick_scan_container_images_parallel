@@ -83,7 +83,7 @@ Note:
     - Ensure that all required files (like the authentication JSON) exist and are accessible.
 ------------------------------------------------------------------------------------------------------------------------
 ```
-## Start Container Images Preflight Scan Automation With Quay RESTAPI
+## Start Container Images Using Preflight
 ```shellSession
 $ bash quick_scan_container_images_online_offline.sh -rn xxxxxxx_5gc -cp "busybox|simple"
 
