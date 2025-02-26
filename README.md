@@ -8,11 +8,13 @@ The script produces test case results, which are initially displayed in the cons
 ## Pre-Requisites
 - Clone this github repo then use the scripts  
 - Login to Private Registry Server with `podman login -u xxx quay.io`
-- To talk to Quay.io Or Private Registry via REST API, it requires oauth and bear token
+- To access to Quay.io Or Private Registry via REST API, it requires oauth and bear token
 - Push images to Quay Repository with specific Organization
 - Python3 + Pandas and Openpyxl using `sudo pip3 install pandas openpyxl`   
   if `pip3` is not installed yet then `sudo dnf install python3-pip -y`
 - netcat (nc) rpm installed if not there it will skip the connectivity checking
+- bc rpm is also needed for check time
+  sudo dnf install bc -y
 - Install preflight 
 ```shellSession
 wget https://github.com/redhat-openshift-ecosystem/openshift-preflight/releases/download/1.12.0/preflight-linux-amd64
@@ -27,7 +29,6 @@ $ bash quick_scan_container_images_online_offline.sh -h
 Usage (API-based):
     quick_scan_container_images_online_offline.sh -rn <repo_ns> -cp <cnf_prefix> [-t <tag_type>] -d <auth.json> -at <api_token> -fq <fqdn> [-ft <filter>]
     
-    Description:
       -rn | --repo-ns
             The repository namespace: either an organization or a user name 
             (e.g., "avareg_5gc" or "avu0").
@@ -56,8 +57,7 @@ Usage (API-based):
 
 Usage (Offline):
     quick_scan_container_images_online_offline.sh --img <image_list.txt> -d <auth.json> -fq <fqdn>
-    
-    Description:
+
       --img | --img-file
             A text file containing a list of images to scan (one image per line).
       
@@ -144,19 +144,63 @@ Total Number Images Scanned: 2
 <!-- ![Images Scan XLSX Conversion Output](img/images_scan_xlsx_conversion_ouput.png "Images Scan XLSX Conversion Output") -->
 
 ## Start Container Images Preflight Scan Automation Without Quay RESTAPI
-When Partner do not have the priviledge to access Quay or private registry RESTAPI, they can dump the following format to a image_list.txt then the script it will read from this file and using preflight to scan images automatic.
-Of course, there are some mandatory parameters that need to be defined before such as auth.json and registry-fqdn.  
+When Partner do not have the priviledge to access Quay or private registry RESTAPI, if you are on disconnected environment, you can prepare a list container images with URL to any filename e.g. image_list.txt.
+If images private, then provide auth.json otherwise you can exclude from argument. 
 **image_list.txt:**
 ```shellSession
 quay.ava.lab/ava_5gc/ava-core/univ-smf-nec:v1
 quay.ava.lab/ava_5gc/ava-core/univ-smf-nad:v1
 quay.ava.lab/ava_5gc/ava-core/univ-nrf-att:v1
 ```
-- How to run this script without Quay/Registry API (Offline)
-Run it without any argument like this  
+- How to run this script without Quay/Registry API (Offline)  
 ```shellSession
+With Auth.json:
 $ bash quick_scan_container_images_online_offline.sh bash -img image-test.txt -fq quay.io -d ./auth.json
 
 Without Docker Authentication:
 $ bash quick_scan_container_images_online_offline.sh bash -img image-test.txt -fq quay.io
+```
+
+- Output for offline
+```shellSession
+API_TOKEN is not defined then you are using image-test.txt file!!
+
+Checking the pre-requirements steps...........
+========================================================
+Pre-Requirements Checking                      Status    
+---------------------------------------------------------
+python3 and preflight installed                  OK                      
+bc utility installed                             OK                      
+Check Preflight Minimum version 1.6.11+          OK                      
+quay.io's Connection                             OK                      
+Python Pandas and Openpyxl installed             OK                      
+=======================================================
+quay.io/avu0/yings-nginx-oneshot1-8081:1-24
+quay.io/avu0/ying-nginx-oneshot1-8081:1-24
+Please be patient while scanning images...
+
+Scanning the following image: avu0/yings-nginx-oneshot1-8081:1-24
+================================================================================
+20250225-19:31:29 Preflight scan failed for image: quay.io/avu0/yings-nginx-oneshot1-8081:1-24
+
+Scanning the following image: avu0/ying-nginx-oneshot1-8081:1-24
+================================================================================
+Image Name                 Test Case                  Status    
+-------------------------------------------------------------
+ying-nginx-oneshot1-8081 HasLicense                   PASSED        
+ying-nginx-oneshot1-8081 HasUniqueTag                 PASSED        
+ying-nginx-oneshot1-8081 LayerCountAcceptable         PASSED        
+ying-nginx-oneshot1-8081 HasNoProhibitedPackages      PASSED        
+ying-nginx-oneshot1-8081 HasRequiredLabel             PASSED        
+ying-nginx-oneshot1-8081 RunAsNonRoot                 PASSED        
+ying-nginx-oneshot1-8081 HasModifiedFiles             PASSED        
+ying-nginx-oneshot1-8081 BasedOnUbi                   PASSED        
+ying-nginx-oneshot1-8081 HasProhibitedContainerName   PASSED        
+Verdict: PASSED    
+Time elapsed: 29.953 seconds
+--------------------------------------------------------------
+Total Number Images Scanned: 1
+Total Time Scanned: 00h:00m:29s
+------------------------------------------------------
+20250225-19:31:59 Container images scan failed; skipping CSV conversion.
 ```
