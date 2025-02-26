@@ -10,7 +10,7 @@ The script produces test case results, which are initially displayed in the cons
 - Login to Private Registry Server with `podman login -u xxx quay.io`
 - To access to Quay.io Or Private Registry via REST API, it requires oauth and bear token
 - Push images to Quay Repository with specific Organization
-- Python3 + Pandas and Openpyxl using `sudo pip3 install pandas openpyxl`   
+- Python3 + Pandas and Openpyxl using 'pip3 install pandas openpyxl`   
   if `pip3` is not installed yet then `sudo dnf install python3-pip -y`
 - netcat (nc) rpm installed if not there it will skip the connectivity checking
 - bc rpm is also needed for check time
