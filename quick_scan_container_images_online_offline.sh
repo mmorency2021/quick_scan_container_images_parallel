@@ -11,7 +11,6 @@ print_help() {
 Usage (API-based):
     $0 -rn <repo_ns> -cp <cnf_prefix> [-t <tag_type>] -d <auth.json> -at <api_token> -fq <fqdn> [-ft <filter>]
     
-    Description:
       -rn | --repo-ns
             The repository namespace: either an organization or a user name 
             (e.g., "avareg_5gc" or "avu0").
@@ -41,7 +40,6 @@ Usage (API-based):
 Usage (Offline):
     $0 --img <image_list.txt> -d <auth.json> -fq <fqdn>
     
-    Description:
       --img | --img-file
             A text file containing a list of images to scan (one image per line).
       
@@ -137,12 +135,12 @@ for i in "$@"; do
         ;;
     esac
 done
-if [[ -z "$quay_oauth_api_key" ]]; then
+if [[ -z "$API_TOKEN" ]]; then
       if [[ "$IMG_FILE" == "" || "$FQDN" == "" ]]; then
            echo "Usage: bash $0 -img image_list.txt -fq quay.io -d auth.json"
            exit 0
       fi
-      echo "quay_oauth_api_key is not defined then you are using ${IMG_FILE} file!!"
+      echo "API_TOKEN is not defined then you are using ${IMG_FILE} file!!"
       # Skip all the checks below
 else
     #Note: tag-type and log-type can be excluded from argument#
@@ -261,7 +259,7 @@ check_registry_server_connection() {
     HOST="$1"
     #GOOGLE="${2:-google.com}"
     
-    if [[ -z "$quay_oauth_api_key" ]]; then
+    if [[ -z "$API_TOKEN" ]]; then
          HOST="$FQDN"
     fi
 
@@ -280,7 +278,7 @@ check_registry_server_connection() {
 check_docker_auth_json_connection() {
     HOST=$1
     
-    if [[ -z "$quay_oauth_api_key" ]]; then
+    if [[ -z "$API_TOKEN" ]]; then
          HOST="$FQDN"
     fi
 
@@ -348,7 +346,7 @@ start_container_images_scan() {
         hasModStatus=""
         hasModFiles=""
 
-        if [[ -z "$quay_oauth_api_key" ]]; then
+        if [[ -z "$API_TOKEN" ]]; then
             image_details="${ImageLists[$j]}"
             repo_imgname_tag=$(echo "$image_details" | cut -d'/' -f2-)
             img_name=$(echo "$image_details" | rev | cut -d '/' -f1 | rev | cut -d':' -f1)
@@ -494,7 +492,7 @@ check_preflight_version
 check_registry_server_connection $FQDN
 
 #Check Private Registry Server authentication
-if [[ -n "$quay_oauth_api_key" ]]; then
+if [[ -n "$API_TOKEN" ]]; then
      check_private_registry_server_auth $FQDN
 fi
 
@@ -506,7 +504,7 @@ check_python_packages
 
 printf "%s\n" "======================================================="
 
-if [[ -z "$quay_oauth_api_key" ]]; then
+if [[ -z "$API_TOKEN" ]]; then
     # Define the array
     ImageLists=()
 
