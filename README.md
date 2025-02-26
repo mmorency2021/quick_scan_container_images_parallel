@@ -57,9 +57,9 @@ Usage (API-based):
             to filter out images containing these strings.
 
 Usage (Offline):
-    quick_scan_container_images_online_offline.sh --img <image_list.txt> -d <auth.json> -fq <fqdn>
+    quick_scan_container_images_online_offline.sh -img <image_list.txt> -d <auth.json> -fq <fqdn>
 
-      --img | --img-file
+      -img | --img-file
             A text file containing a list of images to scan (one image per line).
       
       The other options are the same as described above.
@@ -73,19 +73,19 @@ Additional Examples:
       
     Example 3 (Offline):
       Private-Registry:
-      quick_scan_container_images_online_offline.sh --img image_list.txt -d auth.json -fq quay.io
+      quick_scan_container_images_online_offline.sh -img image_list.txt -d auth.json -fq quay.io
       
       Public-Registry:
-      quick_scan_container_images_online_offline.sh --img image_list.txt -fq quay.io
+      quick_scan_container_images_online_offline.sh -img image_list.txt -fq quay.io
 
 Note:
     - Both "tag-type" and "log-type" (if used) are optional.
     - Ensure that all required files (like the authentication JSON) exist and are accessible.
 ------------------------------------------------------------------------------------------------------------------------
 ```
-## Start Container Images Using Preflight
+## Start Container Images Using Preflight With API-Based
 ```shellSession
-$ bash quick_scan_container_images_online_offline.sh -rn xxxxxxx_5gc -cp "busybox|simple"
+$ bash quick_scan_container_images_online_offline.sh -rn xxxxxxx_5gc -d auth.json -at xxxxxx -fq quay.io -cp "busybox|simple"
 
 Checking the pre-requirements steps...........
 ========================================================
@@ -135,16 +135,7 @@ Total Number Images Scanned: 2
 20230410-15:54:30 Successfully Converted from preflight_image_scan_result.csv to images_scan_results.xlsx!
 ```
 
-- **Images Scan Console Output:** 
-<!-- ![Images Scan Console Output](img/images_scan_console_output.png "Images Scan Console Output") -->
-
-- **New Images Scan with Debug**
-<!-- ![Images Scan XLSX Conversion Output](img/new-conversion-output.png "Images Scan XLSX Conversion New Output") -->
-
-- **Images Scan XSLX Output:**   
-<!-- ![Images Scan XLSX Conversion Output](img/images_scan_xlsx_conversion_ouput.png "Images Scan XLSX Conversion Output") -->
-
-## Start Container Images Preflight Scan Automation Without Quay RESTAPI
+## Start Container Images Scan Using Preflight (Offline)
 When Partner do not have the priviledge to access Quay or private registry RESTAPI, if you are on disconnected environment, you can prepare a list container images with URL to any filename e.g. image_list.txt.
 If images private, then provide auth.json otherwise you can exclude from argument. 
 **image_list.txt:**
