@@ -254,3 +254,4 @@ Total Scan Time: 00h:01m:08s
 
 20250311-21:12:26 Converted preflight_image_scan_result.csv to images_scan_results.xlsx successfully!
 ```
+![Report From Excel](./img/report_xlsx.png)
