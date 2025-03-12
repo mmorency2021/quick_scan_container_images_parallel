@@ -26,30 +26,42 @@ sudo mv preflight-linux-amd64 /usr/local/bin/preflight
 ## Script Usage
 ```shellSession
 $ python3 quick_scan_container_images_parallel.py -h
-usage: quick_scan_container_images_parallel.py [-h] [-rn REPO_NS] [-cp CNF_PREFIX] [-t TAG_TYPE] [-at API_TOKEN] [-d AUTH_JSON] [-img IMG_FILE] -fq FQDN [-ft FILTER] [-p PARALLEL]
+usage: quick_scan_container_images_parallel.py [-h] [--repo-namespace REPO_NAMESPACE] [--cnf-prefix CNF_PREFIX] [--tag-type TAG_TYPE] [--api-token API_TOKEN] [--auth-json AUTH_JSON]
+                                               [--image-file IMAGE_FILE] --fqdn FQDN [--filter FILTER] [--parallel PARALLEL]
 
-Scan container images (API-based or Offline) using preflight in parallel and convert CSV to XLSX.
+Scan container images using preflight in parallel and convert CSV to XLSX.
+
+Usage Examples:
+
+API-based:
+  ./quick_scan_container_images_parallel.py --repo-namespace avareg_5gc --cnf-prefix "global-|specific" \
+      --auth-json auth.json --api-token xxxxxx --fqdn quay.io --tag-type name --filter "existed_image|tested_image" --parallel 2
+
+Offline:
+  ./quick_scan_container_images_parallel.py --image-file image_list.txt --auth-json auth.json --fqdn quay.io --parallel 2
+  ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io
+  ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io --parallel 2
 
 options:
   -h, --help            show this help message and exit
-  -rn REPO_NS, --repo-ns REPO_NS
-                        Repository namespace (e.g., ava or avareg_5gc)
-  -cp CNF_PREFIX, --cnf-prefix CNF_PREFIX
-                        CNF image prefix (e.g., 'global-' or 'global|non-global')
-  -t TAG_TYPE, --tag-type TAG_TYPE
-                        Image tag type: 'name' (default) or 'digest'
-  -at API_TOKEN, --api-token API_TOKEN
-                        API token (Bearer Token)
-  -d AUTH_JSON, --auth-json AUTH_JSON
-                        Path to Docker authentication JSON file
-  -img IMG_FILE, --img-file IMG_FILE
-                        Text file with a list of images (one per line)
-  -fq FQDN, --fqdn FQDN
-                        Fully-qualified domain name of your registry (e.g., quay.io)
-  -ft FILTER, --filter FILTER
-                        Filter to exclude images (e.g., 'existed_image|tested_image')
-  -p PARALLEL, --parallel PARALLEL
-                        Number of images to scan in parallel (default 1)
+  --repo-namespace REPO_NAMESPACE, -rn REPO_NAMESPACE
+                        Repository namespace (e.g., 'avareg_5gc' or 'avu0').
+  --cnf-prefix CNF_PREFIX, -cp CNF_PREFIX
+                        CNF image prefix to search for (e.g., 'global-' or 'global|non-global').
+  --tag-type TAG_TYPE, -t TAG_TYPE
+                        Image tag type: 'name' (default) or 'digest'.
+  --api-token API_TOKEN, -at API_TOKEN
+                        API token (Bearer Token) for registry access.
+  --auth-json AUTH_JSON, -d AUTH_JSON
+                        Path to Docker authentication JSON file (if required).
+  --image-file IMAGE_FILE, -img IMAGE_FILE
+                        Text file with a list of images (one per line).
+  --fqdn FQDN, -fq FQDN
+                        Fully-qualified domain name of your registry (e.g., 'quay.io').
+  --filter FILTER, -ft FILTER
+                        Filter to exclude images (e.g., 'existed_image|tested_image').
+  --parallel PARALLEL, -p PARALLEL
+                        Number of images to scan in parallel (default: 1)
 ```
 ## Start Container Images Using Preflight With API-Based
 ```shellSession
