@@ -120,9 +120,12 @@ When Partner do not have the priviledge to access Quay or private registry RESTA
 If images private, then provide auth.json otherwise you can exclude from argument. 
 **image_list.txt:**
 ```shellSession
-quay.ava.lab/ava_5gc/ava-core/univ-smf-nec:v1
-quay.ava.lab/ava_5gc/ava-core/univ-smf-nad:v1
-quay.ava.lab/ava_5gc/ava-core/univ-nrf-att:v1
+quay.io/avu0/nginx-118:1-42
+quay.io/avu0/auto-publish-ubi8-nginx-demo1:v121
+quay.io/avu0/ying-nginx-oneshot1-8080:1-24
+quay.io/avu0/ying-nginx-oneshot2-8080:1-24
+quay.io/avu0/ubi8-micro-busybox:non-root
+quay.io/avu0/ying-nginx-oneshot1-8081:1-24
 ```
 - How to run this script without Quay/Registry API (Offline)  
 ```shellSession
