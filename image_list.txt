@@ -1,1 +1,0 @@
-quay.io/avu0/ying-nginx-oneshot1-8081:1-24
