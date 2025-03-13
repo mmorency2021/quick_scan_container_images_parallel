@@ -11,7 +11,7 @@ The script produces test case results, which are initially displayed in the cons
   `podman login -u xxx quay.io`
 - To access to Quay.io Or Private Registry via REST API, it requires oauth and bear token
 - Push images to Quay Repository with specific Organization
-- Python3 + Pandas and Openpyxl using `pip3 install pandas openpyxl`   
+- Python3.9> + Pandas and Openpyxl using `pip3 install pandas openpyxl`   
   if `pip3` is not installed yet then `sudo dnf install python3-pip -y`
 - netcat (nc) rpm installed if not there it will skip the connectivity checking
 - bc rpm is also needed for check time
@@ -138,7 +138,7 @@ $ python3 quick_scan_container_images_parallel.py -img image-test.txt -fq quay.i
 
 - Output for offline
 ```shellSession
-python3 preflight_quickscan.py -img image_list.txt -fq quay.io -p 4
+python3.9 quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io --parallel 4
 
 Checking pre-requisite steps...
 ========================================================
@@ -146,32 +146,17 @@ Pre-Requisites                                 Status
 ---------------------------------------------------------
 python3 and preflight installed                  OK                      
 bc utility installed                             OK                      
-Preflight version check (>=1.6.11)               OK                      
+Preflight version (>=1.6.11)                     OK                      
 quay.io connection                               OK                      
 Python Pandas and Openpyxl installed             OK                      
 =======================================================
-20250311-21:11:18 File 'preflight_image_scan_result.csv' has been renamed to 'preflight_image_scan_result.csv_saved'
-20250311-21:11:18 Scan the following image: quay.io/avu0/nginx-118:1-42 in parallel
-20250311-21:11:18 Scan the following image: quay.io/avu0/ying-nginx-oneshot1-8080:1-24 in parallel
-20250311-21:11:18 Scan the following image: quay.io/avu0/ying-nginx-oneshot2-8080:1-24 in parallel
-20250311-21:11:18 Scan the following image: quay.io/avu0/auto-publish-ubi8-nginx-demo1:v121 in parallel
-20250311-21:11:44 Scan the following image: quay.io/avu0/ubi8-micro-busybox:non-root in parallel
-20250311-21:11:44 Scan the following image: quay.io/avu0/ying-nginx-oneshot1-8081:1-24 in parallel
-
-Scanning image: avu0/ying-nginx-oneshot1-8080:1-24
-================================================================================
-Image Name                           Test Case                  Status    
--------------------------------------------------------------------------------
-ying-nginx-oneshot1-8080       HasLicense                       PASSED      
-ying-nginx-oneshot1-8080       HasUniqueTag                     PASSED      
-ying-nginx-oneshot1-8080       LayerCountAcceptable             PASSED      
-ying-nginx-oneshot1-8080       HasNoProhibitedPackages          PASSED      
-ying-nginx-oneshot1-8080       HasRequiredLabel                 PASSED      
-ying-nginx-oneshot1-8080       RunAsNonRoot                     PASSED      
-ying-nginx-oneshot1-8080       HasModifiedFiles                 PASSED      
-ying-nginx-oneshot1-8080       BasedOnUbi                       PASSED      
-Verdict: PASSED
-Time elapsed: 26.124 seconds
+20250313-11:12:53 File 'preflight_image_scan_result.csv' has been renamed to 'preflight_image_scan_result.csv_saved'
+20250313-11:12:53 Scanning image: quay.io/avu0/nginx-118:1-42 in parallel
+20250313-11:12:53 Scanning image: quay.io/avu0/auto-publish-ubi8-nginx-demo1:v121 in parallel
+20250313-11:12:53 Scanning image: quay.io/avu0/ying-nginx-oneshot2-8080:1-24 in parallel
+20250313-11:12:53 Scanning image: quay.io/avu0/ying-nginx-oneshot1-8080:1-24 in parallel
+20250313-11:13:47 Scanning image: quay.io/avu0/ubi8-micro-busybox:non-root in parallel
+20250313-11:13:48 Scanning image: quay.io/avu0/ying-nginx-oneshot1-8081:1-24 in parallel
 
 Scanning image: avu0/nginx-118:1-42
 ================================================================================
@@ -181,27 +166,13 @@ nginx-118                      HasLicense                       FAILED
 nginx-118                      HasUniqueTag                     PASSED      
 nginx-118                      LayerCountAcceptable             PASSED      
 nginx-118                      HasNoProhibitedPackages          PASSED      
-nginx-118                      HasRequiredLabel                 PASSED      
+nginx-118                      HasRequiredLabel                 FAILED      
 nginx-118                      RunAsNonRoot                     PASSED      
 nginx-118                      HasModifiedFiles                 PASSED      
 nginx-118                      BasedOnUbi                       PASSED      
+nginx-118                      HasProhibitedContainerName       PASSED      
 Verdict: FAILED
-Time elapsed: 26.816 seconds
-
-Scanning image: avu0/auto-publish-ubi8-nginx-demo1:v121
-================================================================================
-Image Name                           Test Case                  Status    
--------------------------------------------------------------------------------
-auto-publish-ubi8-nginx-demo1  HasLicense                       PASSED      
-auto-publish-ubi8-nginx-demo1  HasUniqueTag                     PASSED      
-auto-publish-ubi8-nginx-demo1  LayerCountAcceptable             PASSED      
-auto-publish-ubi8-nginx-demo1  HasNoProhibitedPackages          PASSED      
-auto-publish-ubi8-nginx-demo1  HasRequiredLabel                 PASSED      
-auto-publish-ubi8-nginx-demo1  RunAsNonRoot                     PASSED      
-auto-publish-ubi8-nginx-demo1  HasModifiedFiles                 PASSED      
-auto-publish-ubi8-nginx-demo1  BasedOnUbi                       PASSED      
-Verdict: PASSED
-Time elapsed: 28.524 seconds
+Time elapsed: 54.675 seconds
 
 Scanning image: avu0/ying-nginx-oneshot2-8080:1-24
 ================================================================================
@@ -215,8 +186,41 @@ ying-nginx-oneshot2-8080       HasRequiredLabel                 PASSED
 ying-nginx-oneshot2-8080       RunAsNonRoot                     PASSED      
 ying-nginx-oneshot2-8080       HasModifiedFiles                 PASSED      
 ying-nginx-oneshot2-8080       BasedOnUbi                       PASSED      
+ying-nginx-oneshot2-8080       HasProhibitedContainerName       PASSED      
 Verdict: PASSED
-Time elapsed: 29.539 seconds
+Time elapsed: 55.068 seconds
+
+Scanning image: avu0/auto-publish-ubi8-nginx-demo1:v121
+================================================================================
+Image Name                           Test Case                  Status    
+-------------------------------------------------------------------------------
+auto-publish-ubi8-nginx-demo1  HasLicense                       PASSED      
+auto-publish-ubi8-nginx-demo1  HasUniqueTag                     PASSED      
+auto-publish-ubi8-nginx-demo1  LayerCountAcceptable             PASSED      
+auto-publish-ubi8-nginx-demo1  HasNoProhibitedPackages          PASSED      
+auto-publish-ubi8-nginx-demo1  HasRequiredLabel                 FAILED      
+auto-publish-ubi8-nginx-demo1  RunAsNonRoot                     PASSED      
+auto-publish-ubi8-nginx-demo1  HasModifiedFiles                 PASSED      
+auto-publish-ubi8-nginx-demo1  BasedOnUbi                       PASSED      
+auto-publish-ubi8-nginx-demo1  HasProhibitedContainerName       PASSED      
+Verdict: FAILED
+Time elapsed: 55.849 seconds
+
+Scanning image: avu0/ying-nginx-oneshot1-8080:1-24
+================================================================================
+Image Name                           Test Case                  Status    
+-------------------------------------------------------------------------------
+ying-nginx-oneshot1-8080       HasLicense                       PASSED      
+ying-nginx-oneshot1-8080       HasUniqueTag                     PASSED      
+ying-nginx-oneshot1-8080       LayerCountAcceptable             PASSED      
+ying-nginx-oneshot1-8080       HasNoProhibitedPackages          PASSED      
+ying-nginx-oneshot1-8080       HasRequiredLabel                 PASSED      
+ying-nginx-oneshot1-8080       RunAsNonRoot                     PASSED      
+ying-nginx-oneshot1-8080       HasModifiedFiles                 PASSED      
+ying-nginx-oneshot1-8080       BasedOnUbi                       PASSED      
+ying-nginx-oneshot1-8080       HasProhibitedContainerName       PASSED      
+Verdict: PASSED
+Time elapsed: 57.144 seconds
 
 Scanning image: avu0/ubi8-micro-busybox:non-root
 ================================================================================
@@ -226,12 +230,13 @@ ubi8-micro-busybox             HasLicense                       PASSED
 ubi8-micro-busybox             HasUniqueTag                     PASSED      
 ubi8-micro-busybox             LayerCountAcceptable             PASSED      
 ubi8-micro-busybox             HasNoProhibitedPackages          PASSED      
-ubi8-micro-busybox             HasRequiredLabel                 PASSED      
+ubi8-micro-busybox             HasRequiredLabel                 FAILED      
 ubi8-micro-busybox             RunAsNonRoot                     PASSED      
 ubi8-micro-busybox             HasModifiedFiles                 PASSED      
 ubi8-micro-busybox             BasedOnUbi                       PASSED      
-Verdict: PASSED
-Time elapsed: 20.693 seconds
+ubi8-micro-busybox             HasProhibitedContainerName       PASSED      
+Verdict: FAILED
+Time elapsed: 6.295 seconds
 
 Scanning image: avu0/ying-nginx-oneshot1-8081:1-24
 ================================================================================
@@ -245,13 +250,14 @@ ying-nginx-oneshot1-8081       HasRequiredLabel                 PASSED
 ying-nginx-oneshot1-8081       RunAsNonRoot                     PASSED      
 ying-nginx-oneshot1-8081       HasModifiedFiles                 PASSED      
 ying-nginx-oneshot1-8081       BasedOnUbi                       PASSED      
+ying-nginx-oneshot1-8081       HasProhibitedContainerName       PASSED      
 Verdict: PASSED
-Time elapsed: 41.518 seconds
+Time elapsed: 38.583 seconds
 ------------------------------------------------------------------------------
 Total Images Scanned: 6
-Total Scan Time: 00h:01m:08s
+Total Scan Time: 00h:01m:33s
 ------------------------------------------------------------------------------
 
-20250311-21:12:26 Converted preflight_image_scan_result.csv to images_scan_results.xlsx successfully!
+20250313-11:14:26 Converted preflight_image_scan_result.csv to images_scan_results.xlsx successfully!
 ```
 ![Report From Excel](./img/report_xlsx.png)
