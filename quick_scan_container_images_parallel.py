@@ -14,6 +14,8 @@ Offline:
   ./quick_scan_container_images_parallel.py --image-file image_list.txt --auth-json auth.json --fqdn quay.io --parallel 2
   ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io
   ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io --parallel 2
+
+Note: if preflight scan failed for some reason, then you add --debug
 """
 
 import argparse
@@ -114,6 +116,7 @@ class PreflightScanner:
         self.image_file = self.args.image_file
         self.parallel = self.args.parallel
         self.image_list = []
+        self.debug = self.args.debug
 
     def parse_args(self):
         parser = argparse.ArgumentParser(
@@ -129,6 +132,8 @@ Offline:
   ./quick_scan_container_images_parallel.py --image-file image_list.txt --auth-json auth.json --fqdn quay.io --parallel 2
   ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io
   ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io --parallel 2
+
+Note: if preflight scan failed for some reason, then you add --debug
 """,
             formatter_class=argparse.RawTextHelpFormatter)
         # API-based arguments
@@ -144,6 +149,7 @@ Offline:
         parser.add_argument("--filter", "-ft", help="Filter to exclude images (e.g., 'existed_image|tested_image').")
         # Parallel scanning option
         parser.add_argument("--parallel", "-p", type=int, default=1, help="Number of images to scan in parallel (default: 1).")
+        parser.add_argument("--debug", action="store_true", help="Enable debug logging.")
         return parser.parse_args()
 
     def log(self, message):
@@ -342,7 +348,10 @@ Offline:
         try:
             proc = subprocess.run(preflight_cmd, capture_output=True, text=True)
             exit_status = proc.returncode
+            
             combined_output = proc.stdout + proc.stderr
+            if self.debug:
+               print(combined_output)
 
             # Wait briefly for the log file to be updated
             time.sleep(0.2)
