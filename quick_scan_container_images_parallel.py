@@ -182,11 +182,14 @@ Note: if preflight scan failed for some reason, then you add --debug
         else:
             print("{:<48} \033[1;31m{:<24}\033[m".format("python3 and preflight installed", "NOK"))
             sys.exit(1)
-        if shutil.which("bc"):
-            print("{:<48} \033[1;32m{:<24}\033[m".format("bc utility installed", "OK"))
+
+    def check_python_version(self):
+        current_version = f"{sys.version_info.major}.{sys.version_info.minor}"
+        min_version = "3.9"
+        if sys.version_info >= (3, 9):
+           print("{:<48} \033[1;32m{:<24}\033[m".format("Python3 version (" + current_version + ">=" + min_version + ")", "OK"))
         else:
-            print("{:<48} \033[1;31m{:<24}\033[m".format("bc utility installed", "NOK"))
-            sys.exit(1)
+           print("{:<48} \033[1;31m{:<24}\033[m".format("Python3 version (" + current_version + ">=" + min_version + ")", "NOK"))
 
     @staticmethod
     def version_tuple(version_str):
@@ -200,10 +203,10 @@ Note: if preflight scan failed for some reason, then you add --debug
             if match:
                 current_version = match.group(1)
                 if self.version_tuple(current_version) < self.version_tuple(MIN_VERSION):
-                    print("{:<48} \033[1;31m{:<24}\033[m".format("Preflight version (>=1.6.11)", "NOK"))
+                    print("{:<48} \033[1;31m{:<24}\033[m".format("Preflight version (" + current_version + ">=" + MIN_VERSION + ")", "NOK"))
                     sys.exit(1)
                 else:
-                    print("{:<48} \033[1;32m{:<24}\033[m".format("Preflight version (>=1.6.11)", "OK"))
+                    print("{:<48} \033[1;32m{:<24}\033[m".format("Preflight version (" + current_version + ">=" + MIN_VERSION + ")", "OK"))
             else:
                 self.log("Could not determine preflight version.")
                 sys.exit(1)
@@ -477,6 +480,7 @@ Note: if preflight scan failed for some reason, then you add --debug
         print("{:<46} {:<10}".format("Pre-Requisites", "Status"))
         print("---------------------------------------------------------")
         self.check_required_tools()
+        self.check_python_version()
         self.check_preflight_version()
         self.check_registry_connection()
         if self.api_token:
