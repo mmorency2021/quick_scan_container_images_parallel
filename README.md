@@ -38,9 +38,9 @@ API-based:
       --auth-json auth.json --api-token xxxxxx --fqdn quay.io --tag-type name --filter "existed_image|tested_image" --parallel 2
 
 Offline:
-  ./quick_scan_container_images_parallel.py --image-file image_list.txt --auth-json auth.json --fqdn quay.io --parallel 2
-  ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io
-  ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io --parallel 2
+  ./quick_scan_container_images_parallel.py --image-file image_list.txt --auth-json auth.json --parallel 2
+  ./quick_scan_container_images_parallel.py --image-file image_list.txt 
+  ./quick_scan_container_images_parallel.py --image-file image_list.txt --parallel 2
 
 options:
   -h, --help            show this help message and exit
@@ -145,7 +145,6 @@ Checking pre-requisite steps...
 Pre-Requisites                                 Status    
 ---------------------------------------------------------
 python3 and preflight installed                  OK                      
-bc utility installed                             OK                      
 Preflight version (>=1.6.11)                     OK                      
 quay.io connection                               OK                      
 Python Pandas and Openpyxl installed             OK                      
