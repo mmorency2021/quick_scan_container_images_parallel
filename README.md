@@ -27,7 +27,7 @@ sudo mv preflight-linux-amd64 /usr/local/bin/preflight
 ```shellSession
 $ python3 quick_scan_container_images_parallel.py -h
 usage: quick_scan_container_images_parallel.py [-h] [--repo-namespace REPO_NAMESPACE] [--cnf-prefix CNF_PREFIX] [--tag-type TAG_TYPE] [--api-token API_TOKEN] [--auth-json AUTH_JSON]
-                                               [--image-file IMAGE_FILE] --fqdn FQDN [--filter FILTER] [--parallel PARALLEL]
+                                               [--image-file IMAGE_FILE] [--fqdn FQDN] [--filter FILTER] [--parallel PARALLEL] [--debug]
 
 Scan container images using preflight in parallel and convert CSV to XLSX.
 
@@ -39,8 +39,10 @@ API-based:
 
 Offline:
   ./quick_scan_container_images_parallel.py --image-file image_list.txt --auth-json auth.json --parallel 2
-  ./quick_scan_container_images_parallel.py --image-file image_list.txt 
+  ./quick_scan_container_images_parallel.py --image-file image_list.txt
   ./quick_scan_container_images_parallel.py --image-file image_list.txt --parallel 2
+
+Note: if preflight scan failed for some reason, then you add --debug
 
 options:
   -h, --help            show this help message and exit
@@ -57,11 +59,12 @@ options:
   --image-file IMAGE_FILE, -img IMAGE_FILE
                         Text file with a list of images (one per line).
   --fqdn FQDN, -fq FQDN
-                        Fully-qualified domain name of your registry (e.g., 'quay.io').
+                        Optional or provide a Fully-qualified domain name of your registry (e.g., 'quay.io').
   --filter FILTER, -ft FILTER
                         Filter to exclude images (e.g., 'existed_image|tested_image').
   --parallel PARALLEL, -p PARALLEL
-                        Number of images to scan in parallel (default: 1)
+                        Number of images to scan in parallel (default: 1).
+  --debug               Enable debug logging.
 ```
 ## Start Container Images Using Preflight With API-Based
 ```shellSession
