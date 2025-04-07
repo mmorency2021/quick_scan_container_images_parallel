@@ -3,19 +3,6 @@
 A Python script implementation of a container image scanning tool that supports
 parallel preflight scans and converts CSV results to an XLSX file.
 It supports both API‐based mode (using an API token) and offline mode (using an image list file).
-
-Usage Examples:
-
-API-based:
-  ./quick_scan_container_images_parallel.py --repo-namespace avareg_5gc --cnf-prefix "global-|specific" \
-      --auth-json auth.json --api-token xxxxxx --fqdn quay.io --tag-type name --filter "existed_image|tested_image" --parallel 2
-
-Offline:
-  ./quick_scan_container_images_parallel.py --image-file image_list.txt --auth-json auth.json --fqdn quay.io --parallel 2
-  ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io
-  ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io --parallel 2
-
-Note: if preflight scan failed for some reason, then you add --debug
 """
 
 import argparse
@@ -129,9 +116,9 @@ API-based:
       --auth-json auth.json --api-token xxxxxx --fqdn quay.io --tag-type name --filter "existed_image|tested_image" --parallel 2
 
 Offline:
-  ./quick_scan_container_images_parallel.py --image-file image_list.txt --auth-json auth.json --fqdn quay.io --parallel 2
-  ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io
-  ./quick_scan_container_images_parallel.py --image-file image_list.txt --fqdn quay.io --parallel 2
+  ./quick_scan_container_images_parallel.py --image-file image_list.txt --auth-json auth.json --parallel 2
+  ./quick_scan_container_images_parallel.py --image-file image_list.txt
+  ./quick_scan_container_images_parallel.py --image-file image_list.txt --parallel 2
 
 Note: if preflight scan failed for some reason, then you add --debug
 """,
@@ -145,7 +132,7 @@ Note: if preflight scan failed for some reason, then you add --debug
         # Offline argument
         parser.add_argument("--image-file", "-img", help="Text file with a list of images (one per line).")
         # Common arguments
-        parser.add_argument("--fqdn", "-fq", required=True, help="Fully-qualified domain name of your registry (e.g., 'quay.io').")
+        parser.add_argument("--fqdn", "-fq", required=False, help="Optional or provide a Fully-qualified domain name of your registry (e.g., 'quay.io').")
         parser.add_argument("--filter", "-ft", help="Filter to exclude images (e.g., 'existed_image|tested_image').")
         # Parallel scanning option
         parser.add_argument("--parallel", "-p", type=int, default=1, help="Number of images to scan in parallel (default: 1).")
@@ -308,7 +295,12 @@ Note: if preflight scan failed for some reason, then you add --debug
         os.environ["PFLT_LOGFILE"] = temp_log_file
         os.environ["PFLT_JUNIT"] = "true"
         os.environ["PFLT_LOGLEVEL"] = "debug"
-        self.log(f"Scanning image: {image} in parallel")
+        
+        if self.parallel == 1:
+           self.log(f"Scanning image: {image} in single mode")
+        else:
+           self.log(f"Scanning image: {image} in parallel mode")
+        
         try:
             if not self.api_token:
                 image_details = image.strip()
@@ -482,7 +474,11 @@ Note: if preflight scan failed for some reason, then you add --debug
         self.check_required_tools()
         self.check_python_version()
         self.check_preflight_version()
-        self.check_registry_connection()
+
+        # skip check the registry fqdn connection if user not specified --fqdn quay.io
+        if self.fqdn is not None:
+            self.check_registry_connection()
+        
         if self.api_token:
             self.check_registry_authentication()
         self.check_python_dependencies()
