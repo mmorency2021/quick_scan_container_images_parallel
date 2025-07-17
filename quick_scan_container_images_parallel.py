@@ -479,7 +479,17 @@ Note: if preflight scan failed for some reason, then you add --debug
                 repo_img_tag = parts[1] if len(parts) > 1 else image_details
                 img_name = repo_img_tag.split("/")[-1].split(":")[0]
                 inspect_url = image_details
-                tag = image_details.split(":")[1] if ":" in image_details else ""
+                # Extract tag from the rightmost colon that's not a port number
+                # Tag is after the last colon, but only if it's not followed by a slash
+                if ":" in image_details:
+                    # Split by colon and check if the last part contains no slash (indicating it's a tag)
+                    colon_parts = image_details.split(":")
+                    if len(colon_parts) > 1 and "/" not in colon_parts[-1]:
+                        tag = colon_parts[-1]
+                    else:
+                        tag = ""
+                else:
+                    tag = ""
             else:
                 # API mode
                 image_url = f"https://{self.fqdn}/api/v1/repository/{self.repo_namespace}/{image.strip()}"
