@@ -26,10 +26,10 @@ from openpyxl.styles import PatternFill, Font, Alignment
 # XLSX writing function
 # ------------------------------------------------------------------------------
 
-def write_and_format_xlsx(data: List[List[str]], output_xlsx: str) -> None:
+def write_and_format_xlsx(data: List[List[str]], detailed_checks: List[Dict[str, Any]], output_xlsx: str) -> None:
     """
-    Takes scan result data, sorts it by 'Status' and 'Test Case' (with custom order),
-    formats the worksheet, and saves the result as an Excel workbook.
+    Takes scan result data and detailed check information, sorts it by 'Status' and 'Test Case' (with custom order),
+    formats the worksheet, and saves the result as an Excel workbook with two sheets.
     """
     if not data:
         raise ValueError("No data to write to XLSX")
@@ -51,29 +51,31 @@ def write_and_format_xlsx(data: List[List[str]], output_xlsx: str) -> None:
     status_order = {'FAILED': 0, 'NOT_APP': 1, 'PASSED': 2}
     dict_data.sort(key=lambda x: (status_order.get(x.get('Status', ''), 3), x.get('Test Case', '')))
     
-    # Create workbook and worksheet
+    # Create workbook and worksheets
     wb = Workbook()
-    ws = wb.active
     
-    if ws is None:
+    # First sheet - Summary
+    ws_summary = wb.active
+    if ws_summary is None:
         raise ValueError("Failed to create worksheet")
+    ws_summary.title = "Summary"
     
-    # Set column widths
+    # Set column widths for summary sheet
     column_widths = {
         'A': 20, 'B': 30, 'C': 40, 'D': 30, 'E': 20
     }
     for col, width in column_widths.items():
-        ws.column_dimensions[col].width = width
+        ws_summary.column_dimensions[col].width = width
     
-    # Write headers
-    ws.append(headers)
+    # Write headers to summary sheet
+    ws_summary.append(headers)
     
-    # Write data rows
+    # Write data rows to summary sheet
     for row_data in dict_data:
-        ws.append([row_data.get(header, '') for header in headers])
+        ws_summary.append([row_data.get(header, '') for header in headers])
     
     # Enable text wrap for column C (Has Modified Files)
-    for cell in ws['C']:
+    for cell in ws_summary['C']:
         cell.alignment = Alignment(wrap_text=True)
     
     # Format the Status column (assumed to be column E)
@@ -83,14 +85,14 @@ def write_and_format_xlsx(data: List[List[str]], output_xlsx: str) -> None:
         'NOT_APP': 'FFA500'    # Dark orange
     }
     
-    for row in ws.iter_rows(min_row=2, min_col=5, max_col=5):
+    for row in ws_summary.iter_rows(min_row=2, min_col=5, max_col=5):
         for cell in row:
             cell_value = str(cell.value) if cell.value is not None else ""
             if cell_value in status_colors:
                 cell.font = Font(color=status_colors[cell_value])
     
     # Set alignment: center for "Status" and "Image Tag", left for others
-    for col in ws.columns:
+    for col in ws_summary.columns:
         col_list = list(col)
         if col_list:
             header_value = str(col_list[0].value) if col_list[0].value is not None else ""
@@ -101,12 +103,70 @@ def write_and_format_xlsx(data: List[List[str]], output_xlsx: str) -> None:
                 for cell in col_list:
                     cell.alignment = Alignment(horizontal='left', vertical='center')
     
-    # Format header row
+    # Format header row for summary sheet
     header_fill = PatternFill(start_color='ADD8E6', end_color='ADD8E6', fill_type='solid')
     header_font = Font(bold=True, color='000000')
     header_alignment = Alignment(horizontal='center', vertical='center')
     
-    for cell in ws[1]:
+    for cell in ws_summary[1]:
+        cell.fill = header_fill
+        cell.font = header_font
+        cell.alignment = header_alignment
+    
+    # Second sheet - Detailed Checks
+    ws_details = wb.create_sheet(title="Detailed Checks")
+    
+    # Headers for detailed checks sheet
+    detail_headers = ["Image Name", "Image Tag", "Check Name", "Elapsed Time", "Description", "Help", "Suggestion", "Knowledge Base URL", "Check URL"]
+    
+    # Set column widths for detailed checks sheet
+    detail_column_widths = {
+        'A': 20,  # Image Name
+        'B': 15,  # Image Tag
+        'C': 25,  # Check Name
+        'D': 12,  # Elapsed Time
+        'E': 50,  # Description
+        'F': 50,  # Help
+        'G': 50,  # Suggestion
+        'H': 40,  # Knowledge Base URL
+        'I': 40   # Check URL
+    }
+    for col_letter, width in detail_column_widths.items():
+        ws_details.column_dimensions[col_letter].width = width
+    
+    # Write headers to detailed checks sheet
+    ws_details.append(detail_headers)
+    
+    # Write detailed check data
+    if detailed_checks:
+        for check in detailed_checks:
+            row_data = [
+                check.get('image_name', ''),
+                check.get('image_tag', ''),
+                check.get('name', ''),
+                check.get('elapsed_time', ''),
+                check.get('description', ''),
+                check.get('help', ''),
+                check.get('suggestion', ''),
+                check.get('knowledgebase_url', ''),
+                check.get('check_url', '')
+            ]
+            ws_details.append(row_data)
+    
+    # Enable text wrap for description, help, and suggestion columns
+    for col in ['E', 'F', 'G']:
+        for cell in ws_details[col]:
+            cell.alignment = Alignment(wrap_text=True, vertical='top')
+    
+    # Set alignment for detailed checks sheet
+    for col in ws_details.columns:
+        col_list = list(col)
+        if col_list:
+            for cell in col_list:
+                cell.alignment = Alignment(horizontal='left', vertical='top')
+    
+    # Format header row for detailed checks sheet
+    for cell in ws_details[1]:
         cell.fill = header_fill
         cell.font = header_font
         cell.alignment = header_alignment
@@ -121,6 +181,7 @@ def convert_and_format_csv_to_xlsx(input_csv: str, output_xlsx: str) -> None:
     """
     Reads the CSV file, sorts it by 'Status' and 'Test Case' (with custom order),
     formats the worksheet, and saves the result as an Excel workbook.
+    Note: This legacy function creates only the summary sheet.
     """
     # Read CSV data manually instead of using pandas
     with open(input_csv, 'r', newline='', encoding='utf-8') as csvfile:
@@ -461,10 +522,10 @@ Note: if preflight scan failed for some reason, then you add --debug
         if not self.image_list:
             self.exit_with_error("No images found. Check the API response or the image list file!")
 
-    def write_results_to_xlsx(self, scan_data: List[List[str]]) -> None:
+    def write_results_to_xlsx(self, scan_data: List[List[str]], detailed_checks: List[Dict[str, Any]]) -> None:
         """Write scan results directly to Excel format."""
         try:
-            write_and_format_xlsx(scan_data, self.RESULT_XLSX)
+            write_and_format_xlsx(scan_data, detailed_checks, self.RESULT_XLSX)
             self.log(f"Scan results written to {self.RESULT_XLSX} successfully!")
         except Exception as e:
             self.exit_with_error(f"Failed to write results to XLSX: {e}")
@@ -529,11 +590,94 @@ Note: if preflight scan failed for some reason, then you add --debug
     def parse_preflight_output(self, output: str, img_name: str, tag: str, temp_log_file: str) -> tuple:
         """Parse preflight output and extract results."""
         results = []
+        detailed_checks = []
+        
         for line in output.splitlines():
             m1 = re.search(r'check=([^ ]+)', line)
             m2 = re.search(r'result=([^ ]+)', line)
             if m1 and m2:
                 results.append(f"{img_name},{m1.group(1)},{m2.group(1)}")
+        
+        # Extract detailed check information from JSON output
+        try:
+            json_data = None
+            
+            # Try multiple approaches to find JSON data
+            sources_to_check = [output]
+            
+            # Also check log file content
+            try:
+                with open(temp_log_file, "r") as lf:
+                    log_content = lf.read()
+                    sources_to_check.append(log_content)
+            except Exception as e:
+                if self.debug:
+                    self.log(f"Could not read log file for JSON parsing: {e}")
+            
+            # Look for JSON in various formats
+            for source in sources_to_check:
+                if json_data:
+                    break
+                    
+                # Try different JSON patterns
+                patterns = [
+                    r'\{[^}]*"checks"[^{]*\[[^]]*\{[^}]*"name"[^}]*\}[^]]*\][^}]*\}',  # Full JSON with checks array
+                    r'\{.*?"checks".*?\}',  # Simple pattern
+                    r'(\{(?:[^{}]++|\{(?:[^{}]++|\{[^{}]*+\})*+\})*+\})',  # Nested braces
+                ]
+                
+                for pattern in patterns:
+                    matches = re.finditer(pattern, source, re.DOTALL)
+                    for match in matches:
+                        try:
+                            potential_json = match.group(0)
+                            parsed = json.loads(potential_json)
+                            if "checks" in parsed and isinstance(parsed["checks"], list):
+                                json_data = parsed
+                                break
+                        except json.JSONDecodeError:
+                            continue
+                    if json_data:
+                        break
+                
+                # If no structured JSON found, try to find individual check objects
+                if not json_data:
+                    check_objects = re.findall(r'\{[^}]*"name"[^}]*\}', source)
+                    if check_objects:
+                        temp_checks = []
+                        for check_str in check_objects:
+                            try:
+                                check_obj = json.loads(check_str)
+                                if "name" in check_obj:
+                                    temp_checks.append(check_obj)
+                            except json.JSONDecodeError:
+                                continue
+                        if temp_checks:
+                            json_data = {"checks": temp_checks}
+            
+            # Extract check details from JSON
+            if json_data and "checks" in json_data:
+                for check in json_data["checks"]:
+                    if isinstance(check, dict):
+                        detailed_check = {
+                            'image_name': img_name,
+                            'image_tag': tag,
+                            'name': check.get('name', ''),
+                            'elapsed_time': str(check.get('elapsed_time', '')),
+                            'description': check.get('description', ''),
+                            'help': check.get('help', ''),
+                            'suggestion': check.get('suggestion', ''),
+                            'knowledgebase_url': check.get('knowledgebase_url', ''),
+                            'check_url': check.get('check_url', '')
+                        }
+                        detailed_checks.append(detailed_check)
+                        
+            if self.debug and detailed_checks:
+                self.log(f"Extracted {len(detailed_checks)} detailed checks for {img_name}")
+                    
+        except Exception as e:
+            if self.debug:
+                self.log(f"Error extracting detailed checks: {e}")
         
         # Process results for CSV
         mod_files_map = {}
@@ -567,7 +711,7 @@ Note: if preflight scan failed for some reason, then you add --debug
             mod_files = mod_files_map.get(test_case, "") if mod_status == "FAILED" else ""
             csv_rows.append([image_name, tag, mod_files, test_case, status])
         
-        return results, csv_rows
+        return results, csv_rows, detailed_checks
 
     def format_scan_output(self, results: List[str], img_name: str, repo_img_tag: str, verdict: str, elapsed: float) -> str:
         """Format the scan output for console display."""
@@ -643,7 +787,7 @@ Note: if preflight scan failed for some reason, then you add --debug
             time.sleep(0.2)
             
             # Parse results
-            results, csv_rows = self.parse_preflight_output(
+            results, csv_rows, detailed_checks = self.parse_preflight_output(
                 combined_output, 
                 image_info["img_name"], 
                 image_info["tag"], 
@@ -679,6 +823,7 @@ Note: if preflight scan failed for some reason, then you add --debug
             return {
                 "error": exit_status != 0,
                 "csv_rows": csv_rows,
+                "detailed_checks": detailed_checks,
                 "elapsed": elapsed,
                 "console_output": output,
                 "image": image
@@ -690,6 +835,7 @@ Note: if preflight scan failed for some reason, then you add --debug
             return {
                 "error": True,
                 "csv_rows": [],
+                "detailed_checks": [],
                 "elapsed": time.time() - start_time,
                 "console_output": err_msg,
                 "image": image
@@ -709,6 +855,7 @@ Note: if preflight scan failed for some reason, then you add --debug
         """Scan multiple images in parallel using ThreadPoolExecutor."""
         total_start = time.time()
         all_scan_data = []
+        all_detailed_checks = []
         combined_output = ""
         error_occurred = False
         count = 0
@@ -725,6 +872,7 @@ Note: if preflight scan failed for some reason, then you add --debug
                 if result["error"]:
                     error_occurred = True
                 all_scan_data.extend(result["csv_rows"])
+                all_detailed_checks.extend(result.get("detailed_checks", []))
                 count += 1
 
         # Calculate total time
@@ -738,7 +886,7 @@ Note: if preflight scan failed for some reason, then you add --debug
 
         # Write results directly to XLSX
         if all_scan_data:
-            self.write_results_to_xlsx(all_scan_data)
+            self.write_results_to_xlsx(all_scan_data, all_detailed_checks)
         
         print(combined_output)
         return not error_occurred
