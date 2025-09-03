@@ -1,1 +1,4 @@
 quay.io/avu0/test1-offline-container:v123
+quay.io/avu0/test2-offline-container:v123
+quay.io/avu0/fluentbit:v1
+quay.io/avu0/stress-ng:0.19.00
