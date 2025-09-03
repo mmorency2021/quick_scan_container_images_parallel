@@ -321,8 +321,7 @@ def generate_html_report(csv_file, html_file):
         # Failed images analysis
         failed_images = df[df['Status'] == 'FAILED'].groupby('Image_Name')['Test_Case'].apply(list).to_dict()
         
-        # Image categories (based on naming patterns from prompt.md)
-        categories = _categorize_images(df['Image_Name'].unique())
+
         
         # Build test case details
         test_case_details = ""
@@ -365,79 +364,7 @@ def generate_html_report(csv_file, html_file):
                 </div>
                 """
         
-        # Build categories content
-        categories_content = ""
-        for category, images in categories.items():
-            if images:
-                # Count issues in this category
-                category_failed = sum(1 for img in images if img in failed_images)
-                
-                categories_content += f"""
-                <div class="col-md-6 mb-4">
-                    <div class="card category-card" onclick="showCategoryModal('{category}')">
-                        <div class="card-body text-center">
-                            <h5 class="card-title">{category} 🔗</h5>
-                            <h3 class="text-primary">{len(images)}</h3>
-                            <p class="text-muted">images</p>
-                            {f'<span class="badge bg-warning">{category_failed} with issues</span>' if category_failed > 0 else '<span class="badge bg-success">All passing</span>'}
-                        </div>
-                    </div>
-                </div>
-                """
-        
-        # Generate category modals
-        category_modals = ""
-        for category, images in categories.items():
-            if images:
-                images_list = ""
-                for img in images:
-                    status = "❌" if img in failed_images else "✅"
-                    issues = f" ({', '.join(failed_images[img])})" if img in failed_images else ""
-                    images_list += f"<li>{status} {img}{issues}</li>"
-                
-                modal_id = category.replace(' ', '').replace('&', '')
-                category_modals += f"""
-                <div class="modal fade" id="modal{modal_id}" tabindex="-1">
-                    <div class="modal-dialog modal-lg">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title">{category} Details</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <ul class="nav nav-tabs" id="categoryTabs{modal_id}" role="tablist">
-                                    <li class="nav-item" role="presentation">
-                                        <button class="nav-link active" id="overview-tab-{modal_id}" data-bs-toggle="tab" 
-                                                data-bs-target="#overview-{modal_id}" type="button" role="tab">Overview</button>
-                                    </li>
-                                    <li class="nav-item" role="presentation">
-                                        <button class="nav-link" id="images-tab-{modal_id}" data-bs-toggle="tab" 
-                                                data-bs-target="#images-{modal_id}" type="button" role="tab">Images List</button>
-                                    </li>
-                                </ul>
-                                <div class="tab-content" id="categoryTabContent{modal_id}">
-                                    <div class="tab-pane fade show active" id="overview-{modal_id}" role="tabpanel">
-                                        <div class="mt-3">
-                                            <div class="row">
-                                                <div class="col-md-4"><strong>Total Images:</strong> {len(images)}</div>
-                                                <div class="col-md-4"><strong>Passing:</strong> {len(images) - sum(1 for img in images if img in failed_images)}</div>
-                                                <div class="col-md-4"><strong>Issues:</strong> {sum(1 for img in images if img in failed_images)}</div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="tab-pane fade" id="images-{modal_id}" role="tabpanel">
-                                        <div class="mt-3">
-                                            <ul class="list-unstyled">
-                                                {images_list}
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                """
+
         
         # Generate complete HTML content
         html_content = f"""
@@ -459,16 +386,7 @@ def generate_html_report(csv_file, html_file):
             box-shadow: 0 8px 25px rgba(0,0,0,0.15);
             border-color: #007bff;
         }}
-        .category-card {{
-            transition: all 0.3s ease;
-            cursor: pointer;
-            border: 2px solid transparent;
-        }}
-        .category-card:hover {{
-            transform: translateY(-3px);
-            box-shadow: 0 6px 20px rgba(0,0,0,0.1);
-            border-color: #28a745;
-        }}
+
         .badge-large {{
             font-size: 1rem;
             padding: 0.5rem 1rem;
@@ -498,7 +416,7 @@ def generate_html_report(csv_file, html_file):
             <div class="col-12">
                 <h1 class="display-4 text-center mb-3">🔒 Container Image Security Scanning Report</h1>
                 <div class="alert alert-info text-center">
-                    <h5>Interactive Dashboard - Click on metrics and categories for detailed analysis</h5>
+                    <h5>Interactive Dashboard - Click on metrics for detailed analysis</h5>
                     <small>Report generated on {datetime.now().strftime('%B %d, %Y at %H:%M')} | Total scan time: {df['Scan_Time'].sum():.1f}s</small>
                 </div>
             </div>
@@ -607,15 +525,7 @@ def generate_html_report(csv_file, html_file):
         </div>
         ''' if failed_images_details else ''}
 
-        <!-- Image Categories -->
-        <div class="row mb-5">
-            <div class="col-12">
-                <h2>📦 Image Categories (Click to explore)</h2>
-                <div class="row">
-                    {categories_content}
-                </div>
-            </div>
-        </div>
+
 
         <!-- Footer -->
         <div class="row mt-5">
@@ -816,7 +726,7 @@ def generate_html_report(csv_file, html_file):
         </div>
     </div>
 
-    {category_modals}
+
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
     <script>
@@ -837,10 +747,7 @@ def generate_html_report(csv_file, html_file):
             new bootstrap.Modal(document.getElementById('imagesModal')).show();
         }}
         
-        function showCategoryModal(category) {{
-            const modalId = 'modal' + category.replace(/\\s+/g, '').replace('&', '');
-            new bootstrap.Modal(document.getElementById(modalId)).show();
-        }}
+
         
         // Keyboard support
         document.addEventListener('keydown', function(event) {{
@@ -863,12 +770,7 @@ def generate_html_report(csv_file, html_file):
                 card.setAttribute('aria-label', 'Click to view detailed information');
             }});
             
-            const categoryCards = document.querySelectorAll('.category-card');
-            categoryCards.forEach(card => {{
-                card.setAttribute('role', 'button');
-                card.setAttribute('tabindex', '0');
-                card.setAttribute('aria-label', 'Click to view category details');
-            }});
+
         }});
     </script>
 </body>
@@ -887,30 +789,7 @@ def generate_html_report(csv_file, html_file):
     except Exception as e:
         print(f"Error generating HTML report: {e}")
 
-def _categorize_images(image_names):
-    """Categorize images based on naming patterns from prompt.md"""
-    categories = {
-        'Network Functions': [],
-        'User Plane Functions': [],
-        'Session Management Functions': [],
-        'Access & Mobility Management': [],
-        'Other Components': []
-    }
-    
-    for image in image_names:
-        image_lower = image.lower()
-        if 'global-nf-' in image_lower or 'nf-' in image_lower:
-            categories['Network Functions'].append(image)
-        elif 'global-upf-' in image_lower or 'upf-' in image_lower:
-            categories['User Plane Functions'].append(image)
-        elif 'global-smf-' in image_lower or 'smf-' in image_lower:
-            categories['Session Management Functions'].append(image)
-        elif 'global-amf-' in image_lower or 'global-mme-' in image_lower or 'amf-' in image_lower or 'mme-' in image_lower:
-            categories['Access & Mobility Management'].append(image)
-        else:
-            categories['Other Components'].append(image)
-            
-    return categories
+
 
 def main():
     # Set up argument parser
