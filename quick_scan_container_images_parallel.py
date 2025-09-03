@@ -264,7 +264,7 @@ class PreflightScanner:
     """Main class for handling container image scanning with preflight."""
     
     RESULT_XLSX = "images_scan_results.xlsx"
-    MIN_PYTHON_VERSION = (3, 9)
+    MIN_PYTHON_VERSION = (3, 8)
     MIN_PREFLIGHT_VERSION = "1.6.11"
 
     def __init__(self):
@@ -598,6 +598,9 @@ Note: if preflight scan failed for some reason, then you add --debug
             if m1 and m2:
                 results.append(f"{img_name},{m1.group(1)},{m2.group(1)}")
         
+        if self.debug:
+            self.log(f"Found {len(results)} basic check results for {img_name}")
+        
         # Extract detailed check information from JSON output
         try:
             json_data = None
@@ -614,16 +617,24 @@ Note: if preflight scan failed for some reason, then you add --debug
                 if self.debug:
                     self.log(f"Could not read log file for JSON parsing: {e}")
             
+            if self.debug:
+                self.log(f"Python version: {sys.version_info}")
+                self.log(f"Attempting JSON extraction for {img_name}")
+                for i, source in enumerate(sources_to_check):
+                    self.log(f"Source {i} length: {len(source)} characters")
+            
             # Look for JSON in various formats
             for source in sources_to_check:
                 if json_data:
                     break
                     
-                # Try different JSON patterns
+                # Try different JSON patterns (Python 3.8+ compatible)
                 patterns = [
-                    r'\{[^}]*"checks"[^{]*\[[^]]*\{[^}]*"name"[^}]*\}[^]]*\][^}]*\}',  # Full JSON with checks array
-                    r'\{.*?"checks".*?\}',  # Simple pattern
-                    r'(\{(?:[^{}]++|\{(?:[^{}]++|\{[^{}]*+\})*+\})*+\})',  # Nested braces
+                    r'\{[^}]*"results"[^{]*\{[^}]*"passed"[^{]*\[[^]]*\{[^}]*"name"[^}]*\}[^]]*\][^}]*\}[^}]*\}',  # New format with results.passed
+                    r'\{[^}]*"checks"[^{]*\[[^]]*\{[^}]*"name"[^}]*\}[^]]*\][^}]*\}',  # Old format with checks array
+                    r'\{.*?"results".*?\}',  # Simple pattern for new format
+                    r'\{.*?"checks".*?\}',  # Simple pattern for old format
+                    r'(\{(?:[^{}]*|\{(?:[^{}]*|\{[^{}]*\})*\})*\})',  # Nested braces (Python 3.8+ compatible)
                 ]
                 
                 for pattern in patterns:
@@ -632,7 +643,9 @@ Note: if preflight scan failed for some reason, then you add --debug
                         try:
                             potential_json = match.group(0)
                             parsed = json.loads(potential_json)
-                            if "checks" in parsed and isinstance(parsed["checks"], list):
+                            # Check for new format (results.passed/failed/errors) or old format (checks)
+                            if ("results" in parsed and isinstance(parsed["results"], dict)) or \
+                               ("checks" in parsed and isinstance(parsed["checks"], list)):
                                 json_data = parsed
                                 break
                         except json.JSONDecodeError:
@@ -642,22 +655,64 @@ Note: if preflight scan failed for some reason, then you add --debug
                 
                 # If no structured JSON found, try to find individual check objects
                 if not json_data:
-                    check_objects = re.findall(r'\{[^}]*"name"[^}]*\}', source)
-                    if check_objects:
-                        temp_checks = []
-                        for check_str in check_objects:
+                    # Simple approach: look for lines that look like JSON objects
+                    lines = source.split('\n')
+                    temp_checks = []
+                    
+                    for line in lines:
+                        line = line.strip()
+                        if line.startswith('{') and '"name"' in line:
                             try:
-                                check_obj = json.loads(check_str)
-                                if "name" in check_obj:
+                                # Try to parse the line as JSON
+                                check_obj = json.loads(line)
+                                if isinstance(check_obj, dict) and "name" in check_obj:
                                     temp_checks.append(check_obj)
                             except json.JSONDecodeError:
-                                continue
-                        if temp_checks:
-                            json_data = {"checks": temp_checks}
+                                # Try to extract JSON-like structures with regex
+                                match = re.search(r'\{[^}]*"name"[^}]*\}', line)
+                                if match:
+                                    try:
+                                        check_obj = json.loads(match.group(0))
+                                        if isinstance(check_obj, dict) and "name" in check_obj:
+                                            temp_checks.append(check_obj)
+                                    except json.JSONDecodeError:
+                                        continue
+                    
+                    if temp_checks:
+                        json_data = {"checks": temp_checks}
+                        if self.debug:
+                            self.log(f"Found {len(temp_checks)} checks using fallback method")
             
-            # Extract check details from JSON
-            if json_data and "checks" in json_data:
-                for check in json_data["checks"]:
+            # Extract check details from JSON - handle both old and new format
+            if json_data:
+                if self.debug:
+                    self.log(f"Successfully parsed JSON data for {img_name}")
+                checks_to_process = []
+                
+                # New format (preflight 1.14+): checks are under results.passed/failed/errors
+                if "results" in json_data:
+                    json_results = json_data["results"]  # Use different variable name to avoid collision
+                    if self.debug:
+                        self.log(f"Found new format JSON with results structure for {img_name}")
+                    if "passed" in json_results:
+                        checks_to_process.extend(json_results["passed"])
+                        if self.debug:
+                            self.log(f"Added {len(json_results['passed'])} passed checks")
+                    if "failed" in json_results:
+                        checks_to_process.extend(json_results["failed"])
+                        if self.debug:
+                            self.log(f"Added {len(json_results['failed'])} failed checks")
+                    if "errors" in json_results:
+                        checks_to_process.extend(json_results["errors"])
+                        if self.debug:
+                            self.log(f"Added {len(json_results['errors'])} error checks")
+                
+                # Old format: checks are directly under "checks"
+                elif "checks" in json_data:
+                    checks_to_process = json_data["checks"]
+                
+                # Process all found checks
+                for check in checks_to_process:
                     if isinstance(check, dict):
                         detailed_check = {
                             'image_name': img_name,
@@ -671,9 +726,12 @@ Note: if preflight scan failed for some reason, then you add --debug
                             'check_url': check.get('check_url', '')
                         }
                         detailed_checks.append(detailed_check)
-                        
-            if self.debug and detailed_checks:
-                self.log(f"Extracted {len(detailed_checks)} detailed checks for {img_name}")
+            
+            if self.debug:
+                if detailed_checks:
+                    self.log(f"Extracted {len(detailed_checks)} detailed checks for {img_name}")
+                else:
+                    self.log(f"No detailed checks found for {img_name} - JSON data: {'found' if json_data else 'not found'}")
                     
         except Exception as e:
             if self.debug:
@@ -710,6 +768,9 @@ Note: if preflight scan failed for some reason, then you add --debug
             image_name, test_case, status = parts[0], parts[1], parts[2].replace("ERROR", "NOT_APP")
             mod_files = mod_files_map.get(test_case, "") if mod_status == "FAILED" else ""
             csv_rows.append([image_name, tag, mod_files, test_case, status])
+        
+        if self.debug:
+            self.log(f"Generated {len(csv_rows)} CSV rows for {img_name}")
         
         return results, csv_rows, detailed_checks
 
@@ -885,8 +946,14 @@ Note: if preflight scan failed for some reason, then you add --debug
         combined_output += "-" * 78 + "\n"
 
         # Write results directly to XLSX
+        if self.debug:
+            self.log(f"Total scan data rows: {len(all_scan_data)}")
+            self.log(f"Total detailed checks: {len(all_detailed_checks)}")
+        
         if all_scan_data:
             self.write_results_to_xlsx(all_scan_data, all_detailed_checks)
+        else:
+            self.log("No scan data to write to XLSX - scan_data is empty")
         
         print(combined_output)
         return not error_occurred
